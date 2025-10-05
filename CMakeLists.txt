@@ -6,15 +6,28 @@ project(
 	LANGUAGES CXX
 )
 
+# Default to release if no build type specified
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif()
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(COMMON_FLAGS "-Wall -Wextra -Werror -fno-exceptions -fno-rtti")
 
 # Flags by build type
 set(CMAKE_CXX_FLAGS_DEBUG   "${COMMON_FLAGS} -g")
 set(CMAKE_CXX_FLAGS_RELEASE "${COMMON_FLAGS} -O3 -DNDEBUG")
+
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/52eb8108c5bdec04579160ae17225d66034bd723.zip
+)
+# For Windows: Prevent overriding the parent project's compiler/linker settings
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
 
 add_executable(wisc src/main.cpp)
 
