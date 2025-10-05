@@ -29,7 +29,16 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
+# Latest ARGPARSE
+include(FetchContent)
+FetchContent_Declare(
+    argparse
+    GIT_REPOSITORY https://github.com/p-ranav/argparse.git
+)
+FetchContent_MakeAvailable(argparse)
+
 add_executable(wisc src/main.cpp)
+target_link_libraries(wisc argparse)
 
 add_executable(test_scanner
 	src/scanner.cpp
