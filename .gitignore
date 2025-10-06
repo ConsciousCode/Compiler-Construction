@@ -36,6 +36,9 @@
 *.exe
 *.out
 *.app
+test-scanner
+scanner-test
+wisc
 
 # debug information files
 *.dwo
@@ -43,3 +46,5 @@
 # Directories
 out/
 build/
+_deps/
+
