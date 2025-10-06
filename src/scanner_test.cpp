@@ -1,4 +1,6 @@
 #include <string>
+#include <fstream>
+#include <sstream>
 #include <gtest/gtest.h>
 
 #include "scanner.hpp"
@@ -32,5 +34,66 @@ TEST(ScannerTest, SimpleIfStatement){
     ASSERT_EQ(actual.size(), expected.size()) << "token count mismatch";
     for (size_t i = 0; i < expected.size(); ++i) {
         EXPECT_EQ(actual[i], expected[i]) << "mismatch at token index " << i;
+    }
+}
+
+
+static void read_file_or_fail(const std::string& path, std::string& out) {
+    std::ifstream in(path);
+    ASSERT_TRUE(in.good()) << "Cannot open file: " << path;
+    std::ostringstream ss;
+    ss << in.rdbuf();
+    out = ss.str();
+}
+
+TEST(ScannerTest, Collatz_NoErrors) {
+    std::string path = std::string(EXAMPLES_DIR) + "/collatz.while";
+    std::string source;
+
+    read_file_or_fail(path, source);
+    
+    Scanner s(source.c_str());
+    for (;;) {
+        Token t = s.next_token();
+
+        ASSERT_NE(t.type, TokenType::ERROR) << "Scanner produced ERROR at " << t.loc;
+        if (t.type == TokenType::TOK_EOF) 
+        {
+            break;
+        }
+    }
+}
+
+TEST(ScannerTest, Factorial_NoErrors) {
+    std::string path = std::string(EXAMPLES_DIR) + "/factorial.while";
+    std::string source;
+
+    read_file_or_fail(path, source);
+    Scanner s(source.c_str());
+    for (;;) {
+        Token t = s.next_token();
+
+        ASSERT_NE(t.type, TokenType::ERROR) << "Scanner produced ERROR at " << t.loc;
+        if (t.type ==TokenType::TOK_EOF)
+        {
+            break;
+        }
+    }
+}
+
+TEST(ScannerTest, Fibonacci_NoErrors) {
+    std::string path = std::string(EXAMPLES_DIR) + "/fibonacci.while";
+    std::string source;
+
+    read_file_or_fail(path, source);
+    Scanner s(source.c_str());
+    for (;;) {
+        Token t = s.next_token();
+
+        ASSERT_NE(t.type, TokenType::ERROR) << "Scanner produced ERROR at " << t.loc;
+        if (t.type ==TokenType::TOK_EOF)
+        {
+            break;
+        }
     }
 }

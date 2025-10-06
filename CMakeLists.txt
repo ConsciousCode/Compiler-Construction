@@ -54,6 +54,11 @@ add_executable(
     src/token.cpp
     src/scanner_test.cpp
 )
+
+target_compile_definitions(scanner_test PRIVATE
+    EXAMPLES_DIR="${CMAKE_SOURCE_DIR}/examples"
+)
+
 target_link_libraries(
     scanner_test
     GTest::gtest_main
