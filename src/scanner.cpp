@@ -210,11 +210,9 @@ Token Scanner::next_token() {
     char *end = nullptr;
     int64_t value = std::strtoll(cur, &end, 10);
     if(end != cur) {
-        advance(end - cur);
-        return Token {
-            tokloc, static_cast<int>(end - cur),
-            TokenType::INTEGER, value
-        };
+        int len = end - cur;
+        advance(len);
+        return Token { tokloc, len, TokenType::INTEGER, value };
     }
     return Token { tokloc, 0, TokenType::ERROR };
 }
