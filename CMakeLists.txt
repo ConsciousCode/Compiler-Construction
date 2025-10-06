@@ -45,4 +45,18 @@ add_executable(test_scanner
 	src/test_scanner.cpp
 )
 
+enable_testing()
+
+add_executable(
+    scanner_test
+    src/scanner.cpp
+    src/scanner_test.cpp
+)
+target_link_libraries(
+    scanner_test
+    GTest::gtest_main
+)
+include(GoogleTest)
+gtest_discover_tests(scanner_test)
+
 target_include_directories(test_scanner PRIVATE src)
