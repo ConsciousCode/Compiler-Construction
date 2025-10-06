@@ -5,6 +5,17 @@
  */
 struct Loc {
     int line, col, pos;
+
+    bool operator==(const Loc& other) const {
+        return line == other.line
+            && col == other.col
+            && pos == other.pos;
+    }
+
+    
+    bool operator!=(const Loc& other) const {
+        return !(*this == other);
+    }
 };
 
 /**
@@ -63,6 +74,18 @@ struct Token {
 
     Token(Loc loc, int length, TokenType type, int64_t value = 0)
         : loc(loc), length(length), type(type), value(value) {}
+
+    bool operator==(const Token& other) const {
+        return loc == other.loc 
+            && length == other.length
+            && type == other.type
+            && value == other.value;
+    }
+
+    bool operator!=(const Token& other) const {
+        return !(*this == other);
+    }
+
 };
 
 class Scanner {
