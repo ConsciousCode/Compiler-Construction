@@ -43,6 +43,7 @@ target_link_libraries(wisc argparse)
 add_executable(test_scanner
 	src/scanner.cpp
 	src/test_scanner.cpp
+	src/token.cpp
 )
 
 enable_testing()
@@ -50,6 +51,7 @@ enable_testing()
 add_executable(
     scanner_test
     src/scanner.cpp
+    src/token.cpp
     src/scanner_test.cpp
 )
 target_link_libraries(
