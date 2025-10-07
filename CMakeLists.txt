@@ -40,9 +40,9 @@ FetchContent_MakeAvailable(argparse)
 add_executable(wisc src/main.cpp)
 target_link_libraries(wisc argparse)
 
-add_executable(test_scanner
+add_executable(scanner_example
 	src/scanner.cpp
-	src/test_scanner.cpp
+	src/scanner_example.cpp
 	src/token.cpp
 )
 
@@ -66,4 +66,4 @@ target_link_libraries(
 include(GoogleTest)
 gtest_discover_tests(scanner_test)
 
-target_include_directories(test_scanner PRIVATE src)
+target_include_directories(scanner_example PRIVATE src)
