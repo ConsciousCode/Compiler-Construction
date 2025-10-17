@@ -1,0 +1,97 @@
+Arithmetic expressions a ::= x | n | a1 oa a2
+Boolean expressions b ::= true | false | not b1 | b1 ob b2 | a1 or a2
+Commands c ::= x := a | skip | c1; c2 | if b then c1 else c2 fi | while b do c1 od
+where x ranges over (scalar) variable names; n ranges over integer literals; oa ranges over binary
+arithmetic operators, namely +, −, ×; true and false are boolean literals; not is a unary
+boolean operator; ob ranges over binary boolean operators, namely ∧, ∨; or ranges over binary
+relational operators, namely =, <, ≤, >, ≥.
+
+;; High-level grammar (ambiguous)
+
+<logical> ::= and | or
+<relational> ::= = | < | <= | > | >=
+<operator> ::= + | - | *
+
+<conditional> ::=
+    true
+  | false
+  | not [ b1 ]
+  | [ <conditional> ]
+  | <conditional> <logical> <conditional>
+  | <arith> <relational> <arith>
+
+<arith> ::=
+    <ident>
+  | <integer>
+  | <arith> <operator> <arith>
+  | ( <arith> )
+
+<cmd> ::=
+    <ident> := <arith>
+  | skip
+  | <cmd> ; <cmd>
+  | if <conditional> then <cmd> else <cmd> fi
+  | while <conditional> do <cmd> od
+
+<prog> ::= <cmd>
+
+;; Unambiguous grammar embedding operator precedence
+
+<relational> ::= = | < | <= | > | >=
+<additive> ::= + | -
+
+<conditional> ::= <disjunction> | <comparison> | <boolean>
+<disjunction> ::= <conjunction> | <disjunction> or <conjunction>
+<conjunction> ::= <boolean> | <conjunction> and <boolean>
+<boolean> ::= true | false | not [ b1 ] | [ <conditional> ]
+
+<comparison> ::= <arith> <relational> <arith>
+
+<arith> ::= <term> | <arith> <additive> <term>
+<term> ::= <factor> | <term> * <factor>
+<factor> ::= <ident> | <integer> | ( <arith> )
+
+<cmd> ::=
+      <ident> := <arith>
+    | skip
+    | <cmd> ; <cmd>
+    | if <conditional> then <cmd> else <cmd> fi
+    | while <conditional> do <cmd> od
+
+<prog> ::= <cmd>
+
+;; Non-left recursive grammar
+
+<op_logical> ::= and | or
+<relational> ::= = | < | <= | > | >=
+<additive> ::= + | -
+
+<conditional> ::= <disjunction> | <comparison> | <boolean>
+
+<disjunction> ::= <conjunction> <disjunction*>
+<disjunction*> ::= or <conjunction> <disjunction*> | \eps
+
+<conjunction> ::= <boolean> <conjunction*>
+<conjunction*> ::= and <boolean> <conjunction*> | \eps
+
+<boolean> ::= true | false | not [ b1 ] | [ <conditional> ]
+
+<comparison> ::= <arith> <relational> <arith>
+
+<arith> ::= <term> <arith*>
+<arith*> ::= <additive> <term> <arith*> | \eps
+
+<term> ::= <factor> <term*>
+<term*> ::= * <factor> <term*> | \eps
+
+<factor> ::= <ident> | <integer> | ( <arith> )
+
+<block> ::= <cmd> <block*>
+<block*> ::= ; <cmd> <block*>
+<cmd> ::=
+      <ident> := <arith>
+    | skip
+    | if <conditional> then <cmd> else <cmd> fi
+    | while <conditional> do <cmd> od
+
+<prog> ::= <cmd>
