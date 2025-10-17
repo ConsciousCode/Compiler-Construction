@@ -94,4 +94,4 @@ relational operators, namely =, <, ≤, >, ≥.
     | if <conditional> then <cmd> else <cmd> fi
     | while <conditional> do <cmd> od
 
-<prog> ::= <cmd>
+<prog> ::= <block>
