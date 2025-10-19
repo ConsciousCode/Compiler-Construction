@@ -1,3 +1,5 @@
+#pragma once
+
 #include <string>
 #include <vector>
 #include <memory>
@@ -6,44 +8,46 @@
 namespace ast {
 
 struct Arith;
-using Expr = std::variant<int, std::string, Arith>;
+using Expr = std::variant<int, std::string, std::shared_ptr<Arith>>;
 
 struct Arith {
     enum class Op { ADD, SUB, MUL };
 
     Op op;
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
+    Expr left;
+    Expr right;
 };
 
 struct Not;
 struct Logical;
 struct Comparison;
-using Cond = std::variant<bool, Not, Logical, Comparison>;
+using Cond = std::variant<bool, std::shared_ptr<Not>, std::shared_ptr<Logical>, std::shared_ptr<Comparison>>;
 
 struct Not {
-    std::unique_ptr<Cond> cond;
+    Cond cond;
 };
 
 struct Logical {
     enum class Op { AND, OR };
 
     Op op;
-    std::unique_ptr<Cond> left;
-    std::unique_ptr<Cond> right;
+    Cond left;
+    Cond right;
 };
 
 struct Comparison {
     enum class Op { EQ, LT, LE, GT, GE };
 
     Op op;
-    std::unique_ptr<Arith> left;
-    std::unique_ptr<Arith> right;
+    Arith left;
+    Arith right;
 };
 
 struct Assign {
     std::string name;
-    std::unique_ptr<Arith> value;
+    Expr value;
+
+    Assign(std::string varName, Expr val) : name(varName), value(val) {}; 
 };
 
 struct If;
@@ -52,18 +56,18 @@ struct Skip;
 using Cmd = std::variant<Assign, If, While, Skip>;
 
 struct Block {
-    std::vector<std::unique_ptr<Cmd>> cmds;
+    std::vector<Cmd> cmds;
 };
 
 struct If {
-    std::unique_ptr<Cond> cond;
-    std::unique_ptr<Block> then;
-    std::unique_ptr<Block> el;
+    Cond cond;
+    Block then;
+    Block el;
 };
 
 struct While {
-    std::unique_ptr<Cond> cond;
-    std::unique_ptr<Block> body;
+    Cond cond;
+    Block body;
 };
 
 struct Skip {};
