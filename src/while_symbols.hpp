@@ -9,7 +9,6 @@ namespace while_symbols {
     enum class Nonterm : uint16_t {
         Program,
         Block,
-        CmdList,
         Cmd,
         Assign,
         If,
@@ -19,9 +18,15 @@ namespace while_symbols {
         Term,
         Factor,
         Cond,
-        Logical,
         Not,
-        Comparison
+        Comparison,
+
+        ArithOp,
+        RelOp,
+        LogicalOp,
+
+        ArithExpr, 
+        BoolExpr,
     };
 
     enum class SymKind : uint8_t {Terminal, NonTerminal, Epsilon, End }; 
