@@ -1,0 +1,10 @@
+{-
+  Loop(n): run a while loop n times
+  input: n
+  output: output
+-}
+
+while n > 0 do
+  output := output + 1
+  n := n - 1
+od

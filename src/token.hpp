@@ -68,8 +68,10 @@ enum class TokenType {
     PUNC_OP = 0x60,
     OP_ASSIGN = PUNC_OP | 0,
     OP_SEMI = PUNC_OP | 1,
-    OP_LBRACK = PUNC_OP | 2,
-    OP_RBRACK = PUNC_OP | 3
+    OP_LPAREN = PUNC_OP | 2,
+    OP_RPAREN = PUNC_OP | 3,
+    OP_LBRACK = PUNC_OP | 4,
+    OP_RBRACK = PUNC_OP | 5
 };
 
 std::ostream& operator<<(std::ostream& os, const TokenType& tt);
