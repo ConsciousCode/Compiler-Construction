@@ -1,0 +1,8 @@
+{- This is an empty file with only comments -}
+-- Like this one
+-- And this one -- {- -} -}
+{--- And this one ---}
+{--}
+-- {-
+--}
+-- It does nothing.
