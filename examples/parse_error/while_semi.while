@@ -1,0 +1,4 @@
+while true do
+    x := 1;
+    y := 2;
+od
