@@ -54,8 +54,10 @@ void Scanner::consume_space() {
 /**
 * Attempt to consume a comment. Stops at the end of the input if the comment
 * is not closed.
+* 
+* Returns whether or not the comment was unclosed.
 */
-void Scanner::consume_comment() {
+bool Scanner::consume_comment() {
     // Single-line comment
     if(cur[0] == '-' && cur[1] == '-') {
         advance(2);
@@ -66,7 +68,7 @@ void Scanner::consume_comment() {
             }
             advance();
         }
-        return;
+        return false;
     }
 
     // Multi-line comment
@@ -76,11 +78,16 @@ void Scanner::consume_comment() {
             consume_space();
             if(cur[0] == '-' && cur[1] == '}') {
                 advance(2);
-                break;
+                return false;
             }
             advance();
         } while(cur[0] != '\0');
+        
+        return true;
     }
+    
+    // No comment so nothing was unclosed
+    return false;
 }
 
 /**
@@ -110,6 +117,9 @@ static const std::unordered_map<std::string_view, TokenType> keywords = {
 };
 
 Token Scanner::next_token() {
+    // Cache for unclosed comments
+    Loc tokloc = loc;
+    
     // Consume leading space and comments
     while(true) {
         if(cur[0] == '\0') {
@@ -118,12 +128,14 @@ Token Scanner::next_token() {
         // Break if these don't advance the iterator
         auto pos = loc.pos;
         consume_space();
-        consume_comment();
+        if(consume_comment()) {
+            return Token { tokloc, loc.pos - tokloc.pos, TokenType::ERROR_COMMENT };
+        }
         if(pos == loc.pos) break;
     }
 
-    // Cache because it'll change with scanning
-    Loc tokloc = loc;
+    // Recache so it's relative to the token
+    tokloc = loc;
 
     // Check for identifiers
     if(std::isalpha(cur[0])) {

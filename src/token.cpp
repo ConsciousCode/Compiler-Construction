@@ -16,6 +16,7 @@ const char *to_string(TokenType tt) {
         case TokenType::ERROR_EOF: return "EOF";
         case TokenType::ERROR_CHAR: return "ERROR_CHAR";
         case TokenType::ERROR_COLON: return "ERROR_COLON";
+        case TokenType::ERROR_COMMENT: return "ERROR_COMMENT";
         case TokenType::IDENT: return "IDENT";
         case TokenType::INTEGER: return "INTEGER";
 
@@ -89,6 +90,7 @@ bool Token::is_error() const {
         case TokenType::ERROR_EOF:
         case TokenType::ERROR_CHAR:
         case TokenType::ERROR_COLON:
+        case TokenType::ERROR_COMMENT:
             return true;
         default:
             return false;

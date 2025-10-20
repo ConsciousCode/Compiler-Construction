@@ -32,6 +32,7 @@ enum class TokenType {
     ERROR_EOF = 2, // End of file
     ERROR_CHAR = 3, // Unknown character
     ERROR_COLON = 4, // Bare colon without an equals sign
+    ERROR_COMMENT = 5, // Unclosed multiline comment
 
     IDENT = 0x10,
     INTEGER = 0x11,
