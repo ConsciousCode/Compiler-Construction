@@ -2,8 +2,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <cstdio>
-#include <unordered_map>
-#include <string_view>
 
 #include "scanner.hpp"
 
@@ -30,8 +28,8 @@ void Scanner::newline() {
  * Consume any leading whitespace, advancing the iterator.
  */
 void Scanner::consume_space() {
-    while(cur[0] != '\0') {
-        switch(cur[0]) {
+    while(*cur) {
+        switch(*cur) {
             case '\n':
                 newline();
                 break;
@@ -57,7 +55,7 @@ void Scanner::consume_comment() {
     // Single-line comment
     if(cur[0] == '-' && cur[1] == '-') {
         advance(2);
-        while(cur[0] != '\0') {
+        while(*cur) {
             if(cur[0] == '\n') {
                 newline();
                 advance();
@@ -78,7 +76,7 @@ void Scanner::consume_comment() {
                 return;
             }
             advance();
-        } while(cur[0] != '\0');
+        } while(*cur);
     }
 }
 
@@ -89,30 +87,11 @@ bool isrest(char c) {
     return isalnum(c) || c == '_' || c == '\'';
 }
 
-/**
- * Map of keywords to token types
- */
-static const std::unordered_map<std::string_view, TokenType> keywords = {
-    {"and", TokenType::OP_AND},
-    {"or", TokenType::OP_OR},
-    {"not", TokenType::OP_NOT},
-    {"true", TokenType::KW_TRUE},
-    {"false", TokenType::KW_FALSE},
-    {"if", TokenType::KW_IF},
-    {"then", TokenType::KW_THEN},
-    {"else", TokenType::KW_ELSE},
-    {"fi", TokenType::KW_FI},
-    {"while", TokenType::KW_WHILE},
-    {"do", TokenType::KW_DO},
-    {"od", TokenType::KW_OD},
-    {"skip", TokenType::KW_SKIP},
-};
-
 Token Scanner::next_token() {
     // Consume leading space and comments
     while(true) {
         if(cur[0] == '\0') {
-            return Token { loc, 0, TokenType::ERROR_EOF };
+            return Token { loc, 0, TokenType::TOK_EOF };
         }
         // Break if these don't advance the iterator
         auto pos = loc.pos;
@@ -129,18 +108,52 @@ Token Scanner::next_token() {
         // First consume the entire identifier to avoid false positives
         // on prefixes
         const char *start = cur;
+        int len = 0;
         do {
+            ++len;
             advance();
         } while(isrest(cur[0]));
 
-        int len = cur - start;
+        // Check for keywords using an O(log n) algorithm
 
-        // Check if it's a keyword
-        auto it = keywords.find(std::string_view(start, len));
-        return Token {
-            tokloc, len,
-            it == keywords.end()? TokenType::IDENT : it->second
-        };
+        #define TREE(kw, tt, L, R) \
+            do { \
+                int dir = strncmp(start, kw, len); \
+                if(dir == 0) { \
+                    return Token { tokloc, len, TokenType::tt }; \
+                } \
+                else if(dir < 0) { L; } \
+                else { R; } \
+            } while(0)
+
+        #define LEAF(kw, tt) TREE(kw, tt, {}, {})
+
+        TREE("not", OP_NOT,
+            TREE("false", KW_FALSE,
+                TREE("do", KW_DO,
+                    LEAF("and", OP_AND),
+                    LEAF("else", KW_ELSE)
+                ),
+                TREE("fi", KW_FI,
+                    {}, LEAF("if", KW_IF)
+                )
+            ),
+            TREE("then", KW_THEN,
+                TREE("or", KW_OD,
+                    LEAF("od", KW_OD),
+                    LEAF("skip", KW_SKIP)
+                ),
+                TREE("true", KW_TRUE,
+                    {}, LEAF("while", KW_WHILE)
+                )
+            )
+        );
+
+        #undef TREE
+        #undef LEAF
+
+        // None of the keywords, must be an identifier
+        return Token { tokloc, len, TokenType::IDENT };
     }
 
     // Check for operators
@@ -160,7 +173,7 @@ Token Scanner::next_token() {
                 advance(2);
                 return Token { tokloc, 2, TokenType::OP_ASSIGN };
             }
-            return Token { tokloc, 0, TokenType::ERROR_COLON };
+            return Token { tokloc, 0, TokenType::ERROR };
 
         case '=':
             advance(1);
@@ -196,15 +209,10 @@ Token Scanner::next_token() {
     // Check for a number
     char *end = nullptr;
     int64_t value = std::strtoll(cur, &end, 10);
-    if(int len = end - cur) {
+    if(end != cur) {
+        int len = end - cur;
         advance(len);
-        return Token {
-            tokloc, len,
-            std::isalpha(cur[0])
-                ? TokenType::ERROR_INT
-                : TokenType::INTEGER,
-            value
-        };
+        return Token { tokloc, len, TokenType::INTEGER, value };
     }
-    return Token { tokloc, 0, TokenType::ERROR_CHAR };
+    return Token { tokloc, 0, TokenType::ERROR };
 }
