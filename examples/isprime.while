@@ -1,0 +1,18 @@
+{-
+  Isprime(n): output 1 if the number is prime, 0 otherwise
+  input: n
+  output: output
+-}
+
+if n <= 1 then
+  output := 0
+else if n < 4 then
+  output := 1
+else
+  i := 2
+j := 2
+
+while n > 0 do
+  output := output + 1
+  n := n - 1
+od
