@@ -506,3 +506,159 @@ TEST(ScannerTest, Torture_NoError) {
         Token{Loc{33,0,853}, 2, TokenType::KW_FI, 0}
     });
 }
+
+TEST(ScannerTest, Colon_Error) {
+    test_file("/scan_error/colon.while", {
+        Token{Loc{1,0,0}, 1, TokenType::IDENT, 0},
+        Token{Loc{1,2,2}, 0, TokenType::ERROR_COLON, 0}
+    });
+}
+
+TEST(ScannerTest, Int_Alpha_Error) {
+    test_file("/scan_error/int_alpha.while", {
+        Token{Loc{1,0,0}, 1, TokenType::IDENT, 0},
+        Token{Loc{1,2,2}, 2, TokenType::OP_ASSIGN, 0},
+        Token{Loc{1,5,5}, 3, TokenType::ERROR_INT, 123}
+    });
+}
+
+TEST(ScannerTest, Unicode_Error) {
+    test_file("/scan_error/unicode.while", {
+        Token{Loc{1,0,0}, 0, TokenType::ERROR_CHAR, 0}
+    });
+}
+
+TEST(ScannerTest, Unprintable_Error) {
+    test_file("/scan_error/unprintable.while", {
+        Token{Loc{1,4,4}, 0, TokenType::ERROR_CHAR, 0}
+    });
+}
+
+/// These tests are errors for the parser but not for the scanner
+
+TEST(ScannerTest, ParserError_Assign_Bool_NoError) {
+    test_file("/parse_error/assign_bool.while", {
+        Token{Loc{1,0,0}, 1, TokenType::IDENT, 0},
+        Token{Loc{1,2,2}, 2, TokenType::OP_ASSIGN, 0},
+        Token{Loc{1,5,5}, 1, TokenType::IDENT, 0},
+        Token{Loc{1,7,7}, 1, TokenType::OP_GT, 0},
+        Token{Loc{1,9,9}, 1, TokenType::IDENT, 0},
+        Token{Loc{1,10,10}, 1, TokenType::OP_SEMI, 0},
+        Token{Loc{2,0,12}, 1, TokenType::IDENT, 0},
+        Token{Loc{2,2,14}, 2, TokenType::OP_ASSIGN, 0},
+        Token{Loc{2,5,17}, 4, TokenType::KW_TRUE, 0},
+        Token{Loc{2,9,21}, 1, TokenType::OP_SEMI, 0},
+        Token{Loc{3,0,23}, 1, TokenType::IDENT, 0},
+        Token{Loc{3,2,25}, 2, TokenType::OP_ASSIGN, 0},
+        Token{Loc{3,5,28}, 1, TokenType::IDENT, 0},
+        Token{Loc{3,7,30}, 1, TokenType::OP_EQ, 0},
+        Token{Loc{3,9,32}, 1, TokenType::IDENT, 0}
+    });
+}
+
+TEST(ScannerTest, ParserError_Bare_Equals_NoError) {
+    test_file("/parse_error/bare_equals.while", {
+        Token{Loc{1,0,0}, 1, TokenType::IDENT, 0},
+        Token{Loc{1,2,2}, 1, TokenType::OP_EQ, 0},
+        Token{Loc{1,4,4}, 1, TokenType::INTEGER, 1}
+    });
+}
+
+TEST(ScannerTest, ParserError_If_Semi_NoError) {
+    test_file("/parse_error/if_semi.while", {
+        Token{Loc{1,0,0}, 2, TokenType::KW_IF, 0},
+        Token{Loc{1,3,3}, 5, TokenType::KW_FALSE, 0},
+        Token{Loc{1,9,9}, 4, TokenType::KW_THEN, 0},
+        Token{Loc{2,4,18}, 1, TokenType::IDENT, 0},
+        Token{Loc{2,6,20}, 2, TokenType::OP_ASSIGN, 0},
+        Token{Loc{2,9,23}, 1, TokenType::INTEGER, 1},
+        Token{Loc{2,10,24}, 1, TokenType::OP_SEMI, 0},
+        Token{Loc{3,4,30}, 1, TokenType::IDENT, 0},
+        Token{Loc{3,6,32}, 2, TokenType::OP_ASSIGN, 0},
+        Token{Loc{3,9,35}, 1, TokenType::INTEGER, 2},
+        Token{Loc{3,10,36}, 1, TokenType::OP_SEMI, 0},
+        Token{Loc{4,0,38}, 4, TokenType::KW_ELSE, 0},
+        Token{Loc{5,4,47}, 1, TokenType::IDENT, 0},
+        Token{Loc{5,6,49}, 2, TokenType::OP_ASSIGN, 0},
+        Token{Loc{5,9,52}, 1, TokenType::INTEGER, 3},
+        Token{Loc{5,10,53}, 1, TokenType::OP_SEMI, 0},
+        Token{Loc{6,0,55}, 2, TokenType::KW_FI, 0},
+    });
+}
+
+TEST(ScannerTest, ParserError_Missing_Else_NoError) {
+    test_file("/parse_error/missing_else.while", {
+        Token{Loc{1,0,0}, 2, TokenType::KW_IF, 0},
+        Token{Loc{1,3,3}, 4, TokenType::KW_TRUE, 0},
+        Token{Loc{1,8,8}, 4, TokenType::KW_THEN, 0},
+        Token{Loc{2,4,17}, 4, TokenType::KW_SKIP, 0},
+        Token{Loc{3,0,22}, 2, TokenType::KW_FI, 0}
+    });
+}
+
+TEST(ScannerTest, ParserError_Missing_Fi_NoError) {
+    test_file("/parse_error/missing_fi.while", {
+        Token{Loc{1,0,0}, 2, TokenType::KW_IF, 0},
+        Token{Loc{1,3,3}, 5, TokenType::KW_FALSE, 0},
+        Token{Loc{1,9,9}, 4, TokenType::KW_THEN, 0},
+        Token{Loc{2,4,18}, 4, TokenType::KW_SKIP, 0},
+        Token{Loc{3,0,23}, 4, TokenType::KW_ELSE, 0},
+        Token{Loc{4,4,32}, 1, TokenType::IDENT, 0},
+        Token{Loc{4,6,34}, 2, TokenType::OP_ASSIGN, 0},
+        Token{Loc{4,9,37}, 1, TokenType::INTEGER, 1}
+    });
+}
+
+TEST(ScannerTest, ParserError_Not_NoError) {
+    test_file("/parse_error/not.while", {
+        Token{Loc{1,0,0}, 5, TokenType::KW_WHILE, 0},
+        Token{Loc{1,6,6}, 3, TokenType::OP_NOT, 0},
+        Token{Loc{1,10,10}, 4, TokenType::KW_TRUE, 0},
+        Token{Loc{1,15,15}, 2, TokenType::KW_DO, 0},
+        Token{Loc{2,4,22}, 4, TokenType::KW_SKIP, 0},
+        Token{Loc{3,0,27}, 2, TokenType::KW_OD, 0}
+    });
+}
+
+TEST(ScannerTest, ParserError_Not_If_NoError) {
+    test_file("/parse_error/not_if.while", {
+        Token{Loc{1,0,0}, 2, TokenType::KW_IF, 0},
+        Token{Loc{1,3,3}, 3, TokenType::OP_NOT, 0},
+        Token{Loc{1,7,7}, 5, TokenType::KW_FALSE, 0},
+        Token{Loc{1,13,13}, 4, TokenType::KW_THEN, 0},
+        Token{Loc{2,4,22}, 1, TokenType::IDENT, 0},
+        Token{Loc{2,6,24}, 2, TokenType::OP_ASSIGN, 0},
+        Token{Loc{2,9,27}, 1, TokenType::INTEGER, 1},
+        Token{Loc{3,0,29}, 4, TokenType::KW_ELSE, 0},
+        Token{Loc{4,4,38}, 1, TokenType::IDENT, 0},
+        Token{Loc{4,6,40}, 2, TokenType::OP_ASSIGN, 0},
+        Token{Loc{4,9,43}, 1, TokenType::INTEGER, 2},
+        Token{Loc{5,0,45}, 2, TokenType::KW_FI, 0}
+    });
+}
+
+TEST(ScannerTest, ParserError_Trailing_Semi_NoError) {
+    test_file("/parse_error/trailing_semi.while", {
+        Token{Loc{1,0,0}, 1, TokenType::IDENT, 0},
+        Token{Loc{1,2,2}, 2, TokenType::OP_ASSIGN, 0},
+        Token{Loc{1,5,5}, 1, TokenType::INTEGER, 1},
+        Token{Loc{1,6,6}, 1, TokenType::OP_SEMI, 0}
+    });
+}
+
+TEST(ScannerTest, ParserError_While_Semi_NoError) {
+    test_file("/parse_error/while_semi.while", {
+        Token{Loc{1,0,0}, 5, TokenType::KW_WHILE, 0},
+        Token{Loc{1,6,6}, 4, TokenType::KW_TRUE, 0},
+        Token{Loc{1,11,11}, 2, TokenType::KW_DO, 0},
+        Token{Loc{2,4,18}, 1, TokenType::IDENT, 0},
+        Token{Loc{2,6,20}, 2, TokenType::OP_ASSIGN, 0},
+        Token{Loc{2,9,23}, 1, TokenType::INTEGER, 1},
+        Token{Loc{2,10,24}, 1, TokenType::OP_SEMI, 0},
+        Token{Loc{3,4,30}, 1, TokenType::IDENT, 0},
+        Token{Loc{3,6,32}, 2, TokenType::OP_ASSIGN, 0},
+        Token{Loc{3,9,35}, 1, TokenType::INTEGER, 2},
+        Token{Loc{3,10,36}, 1, TokenType::OP_SEMI, 0},
+        Token{Loc{4,0,38}, 2, TokenType::KW_OD, 0}
+    });
+}

@@ -14,7 +14,7 @@ void test_scanner(const char *input) {
     Token tok = s.next_token();
     while(tok.type != TokenType::ERROR_EOF) {
         print_token(tok);
-        if(tok.type == TokenType::ERROR) break;
+        if(tok.is_error()) break;
         tok = s.next_token();
     }
 }
