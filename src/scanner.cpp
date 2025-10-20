@@ -22,6 +22,8 @@ void Scanner::advance(int by) {
  * Advance the iterator to the next line.
  */
 void Scanner::newline() {
+    ++cur;
+    ++loc.pos;
     ++loc.line;
     loc.col = 0;
 }
@@ -34,7 +36,7 @@ void Scanner::consume_space() {
         switch(cur[0]) {
             case '\n':
                 newline();
-                break;
+                continue;
 
             case '\r':
             case '\f': case '\v':
@@ -60,7 +62,6 @@ void Scanner::consume_comment() {
         while(cur[0] != '\0') {
             if(cur[0] == '\n') {
                 newline();
-                advance();
                 break;
             }
             advance();
@@ -75,7 +76,7 @@ void Scanner::consume_comment() {
             consume_space();
             if(cur[0] == '-' && cur[1] == '}') {
                 advance(2);
-                return;
+                break;
             }
             advance();
         } while(cur[0] != '\0');

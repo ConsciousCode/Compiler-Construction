@@ -85,19 +85,12 @@ struct Token {
     TokenType type;
     int64_t value;
 
-    Token(Loc loc, int length, TokenType type, int64_t value = 0)
-        : loc(loc), length(length), type(type), value(value) {}
+    Token(Loc loc, int length, TokenType type, int64_t value = 0);
 
-    bool operator==(const Token& other) const {
-        return loc == other.loc
-            && length == other.length
-            && type == other.type
-            && value == other.value;
-    }
-
-    bool operator!=(const Token& other) const {
-        return !(*this == other);
-    }
+    bool operator==(const Token& other) const;
+    bool operator!=(const Token& other) const;
+    
+    bool is_error() const;
 
 };
 
