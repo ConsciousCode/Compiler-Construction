@@ -15,7 +15,7 @@ struct Loc {
             && pos == other.pos;
     }
 
-    
+
     bool operator!=(const Loc& other) const {
         return !(*this == other);
     }
@@ -28,7 +28,11 @@ std::ostream& operator<<(std::ostream& os, const Loc& loc);
  */
 enum class TokenType {
     ERROR = 0,
-    TOK_EOF = 1,
+    ERROR_INT = 1, // Integer followed by alpha
+    ERROR_EOF = 2, // End of file
+    ERROR_CHAR = 3, // Unknown character
+    ERROR_COLON = 4, // Bare colon without an equals sign
+
     IDENT = 0x10,
     INTEGER = 0x11,
 
@@ -85,7 +89,7 @@ struct Token {
         : loc(loc), length(length), type(type), value(value) {}
 
     bool operator==(const Token& other) const {
-        return loc == other.loc 
+        return loc == other.loc
             && length == other.length
             && type == other.type
             && value == other.value;
