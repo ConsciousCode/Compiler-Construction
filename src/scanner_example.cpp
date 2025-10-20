@@ -12,7 +12,7 @@ void test_scanner(const char *input) {
     std::cout << "Test scanner(\"" << input << "\")" << std::endl;
     Scanner s = Scanner(input);
     Token tok = s.next_token();
-    while(tok.type != TokenType::ERROR_EOF) {
+    while(tok.type != TokenType::TOK_EOF) {
         print_token(tok);
         if(tok.type == TokenType::ERROR) break;
         tok = s.next_token();

@@ -12,10 +12,7 @@ std::ostream& operator<<(std::ostream& os, const Loc& loc) {
 const char *to_string(TokenType tt) {
     switch(tt) {
         case TokenType::ERROR: return "ERROR";
-        case TokenType::ERROR_INT: return "ERROR_INT";
-        case TokenType::ERROR_EOF: return "EOF";
-        case TokenType::ERROR_CHAR: return "ERROR_CHAR";
-        case TokenType::ERROR_COLON: return "ERROR_COLON";
+        case TokenType::TOK_EOF: return "EOF";
         case TokenType::IDENT: return "IDENT";
         case TokenType::INTEGER: return "INTEGER";
 
@@ -46,8 +43,6 @@ const char *to_string(TokenType tt) {
 
         case TokenType::OP_ASSIGN: return "':='";
         case TokenType::OP_SEMI: return "';'";
-        case TokenType::OP_LPAREN: return "'('";
-        case TokenType::OP_RPAREN: return "')'";
         case TokenType::OP_LBRACK: return "'['";
         case TokenType::OP_RBRACK: return "']'";
 
@@ -66,3 +61,4 @@ std::ostream& operator<<(std::ostream& os, const Token& t) {
         << "(" << t.loc << "), "
         << t.value << ")";
 }
+

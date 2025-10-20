@@ -7,7 +7,6 @@ if x -- line 1
       {- comment -}
      {- com -- line 3
         ment -}z:=(((z))) -- {--} -- {-}
-    else skip
   fi else w := fi'fi fi;
 if [false] then skip
 else skip' := (skip');
@@ -23,11 +22,9 @@ while [true] do
             -- -}
 skip od
         od; do' := od' + fi'; skip
-    else skip
 fi od
-if [1 > 2 + 3 * (4 - 7)] then a0 := 1 else skip fi
+if [1 > 2 + 3 * (4 - 7)] then a0 := 1 fi
 if a and not[or']or[true] and [false] and[[not[and'not and not[true]]]
    --{}--
     {--}then not'not := and'or + or'and'not else
     fi' := if';while not[{-w-}true] do skip od fi
-fi

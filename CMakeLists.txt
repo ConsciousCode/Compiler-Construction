@@ -46,13 +46,6 @@ add_executable(scanner_example
 	src/token.cpp
 )
 
-add_executable(
-    graphviz_test
-    src/graphviz.cpp
-    src/graphviz_test.cpp
-    src/ast_examples.cpp
-)
-
 enable_testing()
 
 add_executable(
