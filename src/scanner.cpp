@@ -198,6 +198,12 @@ Token Scanner::next_token() {
             advance(1);
             return Token { tokloc, 1, TokenType::OP_SEMI };
 
+        case '(':
+            advance(1);
+            return Token { tokloc, 1, TokenType::OP_LPAREN };
+        case ')':
+            advance(1);
+            return Token { tokloc, 1, TokenType::OP_RPAREN };
         case '[':
             advance(1);
             return Token { tokloc, 1, TokenType::OP_LBRACK };

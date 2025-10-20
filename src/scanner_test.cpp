@@ -26,7 +26,7 @@ TEST(ScannerTest, SimpleIfStatement){
 
     std::vector<Token> actual;
     for (Token tok = s.next_token();
-         tok.type != TokenType::TOK_EOF && tok.type != TokenType::ERROR;
+         tok.type != TokenType::ERROR_EOF && tok.type != TokenType::ERROR;
          tok = s.next_token()) {
         actual.push_back(tok);
     }
@@ -57,7 +57,7 @@ TEST(ScannerTest, Collatz_NoErrors) {
         Token t = s.next_token();
 
         ASSERT_NE(t.type, TokenType::ERROR) << "Scanner produced ERROR at " << t.loc;
-        if (t.type == TokenType::TOK_EOF) 
+        if (t.type == TokenType::ERROR_EOF) 
         {
             break;
         }
@@ -74,7 +74,7 @@ TEST(ScannerTest, Factorial_NoErrors) {
         Token t = s.next_token();
 
         ASSERT_NE(t.type, TokenType::ERROR) << "Scanner produced ERROR at " << t.loc;
-        if (t.type ==TokenType::TOK_EOF)
+        if (t.type ==TokenType::ERROR_EOF)
         {
             break;
         }
@@ -91,7 +91,7 @@ TEST(ScannerTest, Fibonacci_NoErrors) {
         Token t = s.next_token();
 
         ASSERT_NE(t.type, TokenType::ERROR) << "Scanner produced ERROR at " << t.loc;
-        if (t.type ==TokenType::TOK_EOF)
+        if (t.type ==TokenType::ERROR_EOF)
         {
             break;
         }
