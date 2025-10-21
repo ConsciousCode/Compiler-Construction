@@ -3,11 +3,11 @@
 #include <set>
 #include <vector>
 
-#include "while_symbols.hpp"
+#include "whilelang.hpp"
 
-using namespace while_symbols;
+using namespace whilelang;
 
-namespace parser_generator {
+namespace parser {
 
     enum ItemType {
         POSSIBILITY = 0,

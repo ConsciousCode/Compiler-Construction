@@ -5,7 +5,7 @@
 #include <vector>
 #include "token.hpp"
 
-namespace while_symbols {
+namespace whilelang {
     enum class Nonterm : uint16_t {
         Program,
         Block,

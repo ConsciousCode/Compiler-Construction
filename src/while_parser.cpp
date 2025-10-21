@@ -1,16 +1,16 @@
-#include "parser_generator.hpp"
+#include "parser.hpp"
 #include "token.hpp"
-#include "while_symbols.hpp"
+#include "whilelang.hpp"
 
-using namespace while_symbols;
+using namespace whilelang;
 
 using P = Production;
 
-namespace while_parser {
+namespace whilelang {
     class WhileParser {
         public:
             static void generate() {
-                parser_generator::ParserGenerator pg = parser_generator::ParserGenerator{
+                parser::ParserGenerator pg = parser::ParserGenerator{
                     // <prog> ::= <block>
                     P{Nonterm::Program, {N(Nonterm::Block)}},
 
