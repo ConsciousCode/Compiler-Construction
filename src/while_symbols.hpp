@@ -14,14 +14,16 @@ namespace while_symbols {
         If,
         While,
         Skip,
-        Expr,
         Term,
         Factor,
         Cond,
         Not,
         Comparison,
+        
+        Disjunction,
+        Conjunction,
 
-        ArithOp,
+        AdditiveOp,
         RelOp,
         LogicalOp,
 

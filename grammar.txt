@@ -40,12 +40,15 @@ relational operators, namely =, <, ≤, >, ≥.
 <relational> ::= = | < | <= | > | >=
 <additive> ::= + | -
 
-<conditional> ::= <disjunction> | <comparison> | <boolean>
+<conditional> ::= <disjunction>
 <disjunction> ::= <conjunction> | <disjunction> or <conjunction>
 <conjunction> ::= <boolean> | <conjunction> and <boolean>
-<boolean> ::= true | false | not [ b1 ] | [ <conditional> ]
 
-<comparison> ::= <arith> <relational> <arith>
+<boolean> ::=
+    true | false
+  | not [ <conditional> ]
+  | [ <conditional> ]
+  | <arith> <relational> <arith>
 
 <arith> ::= <term> | <arith> <additive> <term>
 <term> ::= <factor> | <term> * <factor>
@@ -66,7 +69,7 @@ relational operators, namely =, <, ≤, >, ≥.
 <relational> ::= = | < | <= | > | >=
 <additive> ::= + | -
 
-<conditional> ::= <disjunction> | <comparison> | <boolean>
+<conditional> ::= <disjunction>
 
 <disjunction> ::= <conjunction> <disjunction*>
 <disjunction*> ::= or <conjunction> <disjunction*> | \eps
@@ -74,9 +77,11 @@ relational operators, namely =, <, ≤, >, ≥.
 <conjunction> ::= <boolean> <conjunction*>
 <conjunction*> ::= and <boolean> <conjunction*> | \eps
 
-<boolean> ::= true | false | not [ b1 ] | [ <conditional> ]
-
-<comparison> ::= <arith> <relational> <arith>
+<boolean> ::=
+    true | false
+  | not [ <conditional> ]
+  | [ <conditional> ]
+  | <arith> <relational> <arith>
 
 <arith> ::= <term> <arith*>
 <arith*> ::= <additive> <term> <arith*> | \eps
