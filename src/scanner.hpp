@@ -7,7 +7,7 @@ class Scanner {
         void advance(int by=1);
         void newline();
         void consume_space();
-        void consume_comment();
+        bool consume_comment();
 
     public:
         Loc loc;

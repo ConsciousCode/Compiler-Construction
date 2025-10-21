@@ -9,20 +9,22 @@ void print_token(const Token &tok) {
 }
 
 void test_scanner(const char *input) {
-    std::cout << "Test scanner(\"" << input << "\")" << std::endl;
+    std::cout << input << std::endl << "---" << std::endl;
     Scanner s = Scanner(input);
     Token tok = s.next_token();
     while(tok.type != TokenType::ERROR_EOF) {
         print_token(tok);
-        if(tok.type == TokenType::ERROR) break;
+        if(tok.is_error()) break;
         tok = s.next_token();
     }
 }
 
-int main() {
-    //test_scanner("1 2 3");
-    //test_scanner("if true then\n  skip\nelse\n  10; x := 10\nfi");
-    std::ifstream ifs("examples/torture.while");
+int main(int argc, char *argv[]) {
+    if(argc < 2) {
+        std::cerr << "Usage: " << argv[0] << " <input_file>" << std::endl;
+        return 1;
+    }
+    std::ifstream ifs(argv[1]);
     std::string prog, line;
     while(std::getline(ifs, line)) {
         prog += line + "\n";
