@@ -2,8 +2,6 @@
 
 #include <cstdint>
 #include <stdint.h>
-#include <vector>
-#include "token.hpp"
 
 namespace whilelang {
     enum class Nonterm : uint16_t {
@@ -31,20 +29,4 @@ namespace whilelang {
         BoolExpr,
     };
 
-    enum class SymKind : uint8_t {Terminal, NonTerminal, Epsilon, End }; 
-
-    struct Symbol {
-        SymKind kind;
-        uint16_t id;
-    };
-
-    inline Symbol T(TokenType t)   { return {SymKind::Terminal,    static_cast<uint16_t>(t)}; }
-    inline Symbol N(Nonterm nt)    { return {SymKind::NonTerminal, static_cast<uint16_t>(nt)}; }
-    constexpr Symbol EPS{SymKind::Epsilon, 0};
-    constexpr Symbol END{SymKind::End, 0};
-
-    struct Production {
-        Nonterm lhs;
-        std::vector<Symbol> rhs;
-    };
 }

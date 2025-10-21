@@ -3,8 +3,9 @@
 #include "whilelang.hpp"
 
 using namespace whilelang;
+using namespace parser;
 
-using P = Production;
+using P = parser::Production;
 
 namespace whilelang {
     class WhileParser {
