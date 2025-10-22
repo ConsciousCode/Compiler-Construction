@@ -20,6 +20,10 @@ namespace parser {
             if(a.kind != b.kind) return a.kind < b.kind;
             else return a.id < b.id;
         }
+        
+        inline bool operator==(const Symbol& other) const {
+            return kind == other.kind && id == other.id;
+        }
 
         inline bool is_epsilon() const {
             return kind == SymKind::Epsilon;   
@@ -99,5 +103,6 @@ namespace parser {
             std::set<Symbol, decltype(&Symbol::less)> first_of_seq(std::vector<Symbol> const& seq) const;
             std::set<Symbol, decltype(&Symbol::less)> gamma_then_a(std::vector<Symbol> const& gamma_tail, Symbol aSym) const; 
             std::set<LR1Item, LR1ItemLess> closure(std::set<LR1Item, LR1ItemLess> I) const;
+            std::set<LR1Item, LR1ItemLess> goto_set(std::set<LR1Item, LR1ItemLess> const& I, Symbol X) const;
     };
 }

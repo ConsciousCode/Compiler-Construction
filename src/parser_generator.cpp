@@ -155,4 +155,20 @@ namespace parser {
 
         return C;
     }
+
+    
+    std::set<LR1Item, LR1ItemLess> ParserGenerator::goto_set(std::set<LR1Item, LR1ItemLess> const& I, Symbol X) const {
+        std::set<LR1Item, LR1ItemLess> J;
+
+        for(const LR1Item& item : I) {
+            if(!item.gamma.empty() && item.gamma.front() == X){
+                LR1Item newItem = item;
+
+                newItem.alpha.push_back(item.gamma.front());
+                newItem.gamma.erase(newItem.gamma.begin());
+
+                J.insert(newItem);
+            }
+        }
+    }
 }
