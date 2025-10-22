@@ -1,0 +1,26 @@
+BasedOnStyle: LLVM
+IndentWidth: 4
+ColumnLimit: 100
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+PointerAlignment: Left 
+
+# Sort includes
+SortIncludes: CaseSensitive
+
+# Group includes into categories
+IncludeBlocks: Regroup
+
+# Define include categories (Google style example)
+IncludeCategories:
+  - Regex:           '^".*"'      # Local includes (your project headers)
+    Priority:        1
+  - Regex:           '^<.*\.h>'   # C system headers
+    Priority:        2
+  - Regex:           '^<.*>'      # C++ standard library
+    Priority:        3
+  - Regex:           '.*'         # Everything else
+    Priority:        4
+
+# Main include file (for .cpp files)
+IncludeIsMainRegex: '(_test)?$'
