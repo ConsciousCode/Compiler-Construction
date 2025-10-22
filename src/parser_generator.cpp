@@ -374,4 +374,8 @@ namespace parser {
                       << " -> State " << next_state << "\n";
         }
     }
+
+    const Production& ParserGenerator::get_production(size_t idx) const {
+        return source_grammar[idx];
+    }
 }
