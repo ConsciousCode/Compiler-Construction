@@ -1,9 +1,9 @@
 #include <cstdlib>
 #include <map>
-#include <unordered_map>
 #include <queue>
-#include <set>
 #include <random>
+#include <set>
+#include <unordered_map>
 
 using nonce_t = std::pair<int64_t, int64_t>;
 
@@ -15,26 +15,22 @@ nonce_t nonce() {
 }
 
 namespace std {
-    template<>
-    struct hash<nonce_t> {
-        size_t operator()(const nonce_t &nonce) const {
-            return std::hash<int64_t>()(nonce.first) ^ std::hash<int64_t>()(nonce.second);
-        }
-    };
-}
+template <> struct hash<nonce_t> {
+    size_t operator()(const nonce_t& nonce) const {
+        return std::hash<int64_t>()(nonce.first) ^ std::hash<int64_t>()(nonce.second);
+    }
+};
+} // namespace std
 
-template<typename Label>
-class NFA {
-public:
-    NFA(const NFA &other)
-        : start(other.start)
-        , transitions(other.transitions)
-        , accepting(other.accepting)
-        , alphabet(other.alphabet) {}
+template <typename Label> class NFA {
+  public:
+    NFA(const NFA& other)
+        : start(other.start), transitions(other.transitions), accepting(other.accepting),
+          alphabet(other.alphabet) {}
 
-    NFA(const char *string) : start(nonce()) {
+    NFA(const char* string) : start(nonce()) {
         auto state = start;
-        for(int i = 0; string[i] != '\0'; ++i) {
+        for (int i = 0; string[i] != '\0'; ++i) {
             char c = string[i];
             auto next = nonce();
             transitions[state] = {{c, {next}}};
@@ -44,16 +40,12 @@ public:
         accepting[state] = Label{};
     }
 
-    NFA operator|(const NFA &other) {
+    NFA operator|(const NFA& other) {
         // Combine transitions
         NFA result{*this};
-        result.transitions.insert(
-            other.transitions.begin(), other.transitions.end()
-        );
+        result.transitions.insert(other.transitions.begin(), other.transitions.end());
         // Combine accepting states
-        result.accepting.insert(
-            other.accepting.begin(), other.accepting.end()
-        );
+        result.accepting.insert(other.accepting.begin(), other.accepting.end());
         // Link the start states
         auto new_start = nonce();
         result.transitions[new_start] = {{'\0', {start, other.start}}};
@@ -63,13 +55,13 @@ public:
         return result;
     }
 
-    NFA operator+(const NFA &other) {
+    NFA operator+(const NFA& other) {
         NFA result;
         // Combine transitions
         result.transitions = other.transitions;
         result.transitions.insert(transitions.begin(), transitions.end());
         // Link LHS accepting to RHS start state
-        for(auto &accept : accepting) {
+        for (auto& accept : accepting) {
             result.transitions[accept.first] = {{'\0', {other.start}}};
         }
         // Use LHS start state
@@ -85,19 +77,20 @@ public:
         std::queue<std::set<nonce_t>> q;
         std::set<nonce_t> powerset = {start};
         q.push(powerset);
-        while(!q.empty()) {
+        while (!q.empty()) {
             auto subset = q.front();
             q.pop();
-            for(char c : alphabet) {
+            for (char c : alphabet) {
                 std::set<nonce_t> succ;
-                for(auto [state, edges] : transitions) {
-                    if(subset.count(state) && edges.count(c)) {
-                        auto &next = edges[c];
+                for (auto [state, edges] : transitions) {
+                    if (subset.count(state) && edges.count(c)) {
+                        auto& next = edges[c];
                         succ.insert(next.begin(), next.end());
                     }
                 }
-                if(succ.empty()) continue;
-                if(!dfa.count(succ)) {
+                if (succ.empty())
+                    continue;
+                if (!dfa.count(succ)) {
                     dfa[succ] = {};
                     q.push(succ);
                 }
@@ -105,12 +98,13 @@ public:
             }
         }
         transitions.clear();
-        for(auto &[subset, edges] : dfa) {
+        for (auto& [subset, edges] : dfa) {
             transitions[nonce()] = edges;
         }
         accepting.clear();
     }
-private:
+
+  private:
     using Adj = std::unordered_map<nonce_t, std::unordered_map<char, std::set<nonce_t>>>;
     nonce_t start;
     Adj transitions;

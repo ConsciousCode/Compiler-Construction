@@ -10,11 +10,8 @@ struct Loc {
     int line, col, pos;
 
     bool operator==(const Loc& other) const {
-        return line == other.line
-            && col == other.col
-            && pos == other.pos;
+        return line == other.line && col == other.col && pos == other.pos;
     }
-
 
     bool operator!=(const Loc& other) const {
         return !(*this == other);
@@ -28,10 +25,10 @@ std::ostream& operator<<(std::ostream& os, const Loc& loc);
  */
 enum class TokenType {
     ERROR = 0,
-    ERROR_INT = 1, // Integer followed by alpha
-    ERROR_EOF = 2, // End of file
-    ERROR_CHAR = 3, // Unknown character
-    ERROR_COLON = 4, // Bare colon without an equals sign
+    ERROR_INT = 1,     // Integer followed by alpha
+    ERROR_EOF = 2,     // End of file
+    ERROR_CHAR = 3,    // Unknown character
+    ERROR_COLON = 4,   // Bare colon without an equals sign
     ERROR_COMMENT = 5, // Unclosed multiline comment
 
     IDENT = 6,
@@ -92,9 +89,8 @@ struct Token {
 
     bool operator==(const Token& other) const;
     bool operator!=(const Token& other) const;
-    
-    bool is_error() const;
 
+    bool is_error() const;
 };
 
 std::ostream& operator<<(std::ostream& os, const Token& t);

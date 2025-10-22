@@ -1,5 +1,6 @@
-#include "ast_examples.hpp"
 #include "graphviz.hpp"
+
+#include "ast_examples.hpp"
 
 void test_graphviz_factorial() {
     auto ast = make_example_ast_factorial();
