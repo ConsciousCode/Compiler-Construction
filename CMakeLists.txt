@@ -37,7 +37,24 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(argparse)
 
-add_executable(wisc src/main.cpp)
+add_executable(wisc 
+    src/main.cpp
+
+    # Codegen
+    src/codegen.cpp
+    src/emitter.cpp
+
+    # AST
+    src/ast_builder.cpp
+
+    # Parser + scanner
+    src/parser.cpp
+    src/parser_generator.cpp
+    src/dotgenerator.cpp
+    src/while_parser.cpp
+    src/scanner.cpp
+    src/token.cpp
+)
 target_link_libraries(wisc argparse)
 
 add_executable(scanner_example
