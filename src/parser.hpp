@@ -1,9 +1,12 @@
 #pragma once
 
 #include <algorithm>
+#include <memory>
 #include <set>
 #include <map>
 #include <vector>
+#include <sstream>
+#include <string>
 
 #include "whilelang.hpp"
 #include "token.hpp"
@@ -135,6 +138,10 @@ namespace parser {
         void print_action_table() const;
         void print_goto_table() const;
 
+            const Production& get_production(size_t idx) const;
+            
+            friend class Parser;
+
         private:
             std::vector<Production> source_grammar;
             std::vector<std::set<LR1Item, LR1ItemLess>> states;
@@ -165,4 +172,43 @@ namespace parser {
             size_t find_or_add_state(std::set<LR1Item, LR1ItemLess> const& items);
 
     };
+
+    struct ParseTreeNode {
+        whilelang::Nonterm nonterminal;
+        TokenType terminal;
+        bool is_terminal;
+        std::string lexeme;
+        std::vector<std::shared_ptr<ParseTreeNode>> children;
+
+        static std::shared_ptr<ParseTreeNode> make_nonterminal(whilelang::Nonterm nt);
+
+        static std::shared_ptr<ParseTreeNode> make_terminal(TokenType tt, std::string lex);
+
+        static void print_tree(std::shared_ptr<ParseTreeNode>node, int indent = 0);
+    };
+
+    class Parser {
+        const ParserGenerator& pg;
+        
+        public:
+            Parser(const ParserGenerator& generator) : pg(generator) {}
+            std::shared_ptr<ParseTreeNode> parse(std::vector<Token> const& tokens);
+    
+    };
+
+    class DotGenerator {
+        private:
+            int node_counter;
+            std::ostringstream dot;
+            
+            int generate_node(std::shared_ptr<ParseTreeNode> node);
+            std::string escape_dot(const std::string& str);
+            
+        public:
+            DotGenerator() : node_counter(0) {}
+            std::string generate(std::shared_ptr<ParseTreeNode> root);
+    };
+        
+    // Helper function to write directly to file
+    void write_dot_file(std::shared_ptr<ParseTreeNode> root, const std::string& filename);
 }
