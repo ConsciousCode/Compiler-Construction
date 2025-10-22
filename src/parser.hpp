@@ -22,6 +22,10 @@ namespace parser {
             else return a.id < b.id;
         }
         
+        inline bool operator<(const Symbol& other) const {
+            return less(*this, other);
+        }
+        
         inline bool operator==(const Symbol& other) const {
             return kind == other.kind && id == other.id;
         }
@@ -68,6 +72,14 @@ namespace parser {
         std::vector<Symbol> beta;   //grammar sequence we've seen
         std::vector<Symbol> gamma;  //grammar sequence we haven't seen
         Symbol a; // lookahead
+        
+        inline bool operator==(const LR1Item& other) const {
+        return it == other.it &&
+               alpha == other.alpha &&
+               beta == other.beta &&
+               gamma == other.gamma &&
+               a == other.a;
+    }
     };
 
     struct LR1ItemLess{
