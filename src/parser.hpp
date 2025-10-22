@@ -103,6 +103,7 @@ namespace parser {
 
         ParserGenerator(std::initializer_list<Production> prods) : source_grammar(prods) {
             build_automaton();
+            build_parse_tables();
         }
         
         void build_automaton();
