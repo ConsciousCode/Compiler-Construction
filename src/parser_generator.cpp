@@ -54,6 +54,12 @@ namespace parser {
         for (size_t i = 0; i < seq.size(); i++){
             const Symbol& X = seq[i];
 
+            if(X.kind == SymKind::End){
+                out.insert(X);
+                all_nullable = false;
+                break;
+            }
+
             if(X.is_terminal()){
                 out.insert(X);
                 all_nullable = false;
