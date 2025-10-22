@@ -171,10 +171,17 @@ namespace parser {
 
         for(const LR1Item& item : I) {
             if(!item.gamma.empty() && item.gamma.front() == X){
-                LR1Item newItem = item;
-
-                newItem.beta.push_back(item.gamma.front());
-                newItem.gamma.erase(newItem.gamma.begin());
+                LR1Item newItem;
+                newItem.it = item.it;
+                newItem.alpha = item.alpha;
+                newItem.a = item.a;
+                
+                // Build beta: old beta + X
+                newItem.beta = item.beta;
+                newItem.beta.push_back(X);
+                
+                // Build gamma: old gamma without first element
+                newItem.gamma = std::vector<Symbol>(item.gamma.begin() + 1, item.gamma.end());
 
                 J.insert(newItem);
             }
@@ -250,7 +257,7 @@ namespace parser {
             if(visited.count(state_id)) continue;
             visited.insert(state_id);
 
-            const auto& I = states[state_id];
+            auto I = states[state_id];
 
             for (const Symbol& X : all_symbols()){
                 auto J = goto_set(I, X);
