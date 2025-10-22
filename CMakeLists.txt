@@ -53,6 +53,18 @@ add_executable(
     src/ast_examples.cpp
 )
 
+add_executable(
+    parser_example
+    src/parser_example.cpp
+    src/parser.cpp
+    src/parser_generator.cpp
+    src/dotgenerator.cpp
+    src/while_parser.cpp
+    src/scanner.cpp
+    src/token.cpp
+)
+target_include_directories(parser_example PRIVATE src)
+
 enable_testing()
 
 add_executable(
@@ -74,3 +86,23 @@ include(GoogleTest)
 gtest_discover_tests(scanner_test)
 
 target_include_directories(scanner_example PRIVATE src)
+
+# Clang Formatting
+find_program(CLANG_FORMAT_EXECUTABLE NAMES clang-format)
+
+if(CLANG_FORMAT_EXECUTABLE)
+    # Get all project files
+    file(GLOB_RECURSE ALL_SOURCE_FILES 
+        ${PROJECT_SOURCE_DIR}/src/*.cpp
+        ${PROJECT_SOURCE_DIR}/src/*.hpp
+        ${PROJECT_SOURCE_DIR}/include/*.h
+        ${PROJECT_SOURCE_DIR}/include/*.hpp
+    )
+    
+    # Add format target
+    add_custom_target(
+        format
+        COMMAND ${CLANG_FORMAT_EXECUTABLE} -i ${ALL_SOURCE_FILES}
+        COMMENT "Running clang-format on source files"
+    )
+endif()

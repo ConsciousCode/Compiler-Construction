@@ -2,5 +2,5 @@
 #include "ast.hpp"
 
 namespace graphviz {
-    void print_viz_block(const ast::Block& blk);
+void print_viz_block(const ast::Block& blk);
 }
