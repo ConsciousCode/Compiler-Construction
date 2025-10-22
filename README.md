@@ -22,3 +22,10 @@ or
 ```bash
 ctest --output-on-failure
 ```
+
+## Code Formatting
+
+Before committing, format your code:
+```bash
+cmake --build build --target format
+```
