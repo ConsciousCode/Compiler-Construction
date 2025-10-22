@@ -1,11 +1,47 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+
 #include "parser.hpp"
 #include "while_parser.hpp"
+#include "scanner.hpp"
 
-int main() {
-    parser::ParserGenerator parser = generate_while_parser();
+int main(int argc, char *argv[]) {
+    if(argc < 2) {
+    std::cerr << "Usage: " << argv[0] << " <input_file>" << std::endl;
+        return 1;
+    }
 
-    parser.print_action_table();
-    parser.print_goto_table();
+    // Load and read file;
+    std::ifstream ifs(argv[1]);
+    std::string prog, line;
+    while(std::getline(ifs, line)) {
+        prog += line + "\n";
+    }
+    ifs.close();
+
+    std::vector<Token> tokens;
+
+    Scanner s = Scanner(prog.c_str());
+    Token t = s.next_token();
+    while(t.type != TokenType::ERROR_EOF) {
+        std::cout << t;
+        if(t.is_error()) break;
+        tokens.push_back(t);
+        t = s.next_token();
+    }
+
+    parser::ParserGenerator pg = generate_while_parser();
+
+    parser::Parser p(pg);
+
+    std::shared_ptr<parser::ParseTreeNode> parse_tree = p.parse(tokens);
+
+    //parser::ParseTreeNode::print_tree(parse_tree);
+
+    if (parse_tree) {
+        parser::write_dot_file(parse_tree, "parse_tree.dot");
+    }
 
     return 0;
 }
