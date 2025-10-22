@@ -1,7 +1,6 @@
 #pragma once
 
 #include <algorithm>
-#include <filesystem>
 #include <set>
 #include <vector>
 
@@ -22,15 +21,15 @@ namespace parser {
             else return a.id < b.id;
         }
 
-        inline bool is_epsilon(){
+        inline bool is_epsilon() const {
             return kind == SymKind::Epsilon;   
         }
 
-        inline bool is_terminal(){
+        inline bool is_terminal() const {
             return kind == SymKind::Terminal;
         }
         
-        inline bool is_nonterm(){
+        inline bool is_nonterm() const {
             return kind == SymKind::NonTerminal;
         }
     };
@@ -88,7 +87,17 @@ namespace parser {
 
         private:
             std::vector<Production> source_grammar;
+            
+            // B -> {rhs1, rhs2...}
+            std::unordered_map<whilelang::Nonterm, std::vector<std::vector<Symbol>>> by_lhs;
 
-            std::set<LR1Item> compute_closure(std::set<LR1Item>& s);
+            // First nonterminals
+            std::unordered_map<whilelang::Nonterm, std::set<Symbol, decltype(&Symbol::less)>> FIRST_NT{};
+
+            void index_grammar();
+            void compute_first_sets();
+            std::set<Symbol, decltype(&Symbol::less)> first_of_seq(std::vector<Symbol> const& seq) const;
+            std::set<Symbol, decltype(&Symbol::less)> gamma_then_a(std::vector<Symbol> const& gamma_tail, Symbol aSym) const; 
+            std::set<LR1Item, LR1ItemLess> closure(std::set<LR1Item, LR1ItemLess> I) const;
     };
 }
