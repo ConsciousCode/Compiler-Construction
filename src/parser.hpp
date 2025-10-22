@@ -85,10 +85,32 @@ namespace parser {
         }
     }; 
 
+    // Parse table stuff
+    enum class ActionType {
+        SHIFT,
+        REDUCE,
+        ACCEPT,
+        ERROR
+    };
+
+    struct Action {
+        ActionType type; 
+        size_t value;
+    };
+
     class ParserGenerator{
         public:
 
-        ParserGenerator(std::initializer_list<Production> prods) : source_grammar(prods) {}
+        ParserGenerator(std::initializer_list<Production> prods) : source_grammar(prods) {
+            build_automaton();
+        }
+        
+        void build_automaton();
+        void build_parse_tables();
+
+        // table printing
+        void print_action_table() const;
+        void print_goto_table() const;
 
         private:
             std::vector<Production> source_grammar;
@@ -102,6 +124,13 @@ namespace parser {
             // First nonterminals
             std::unordered_map<whilelang::Nonterm, std::set<Symbol, decltype(&Symbol::less)>> FIRST_NT{};
 
+            //parse tables
+            std::map<std::pair<size_t, Symbol>, Action> action_table;
+            std::map<std::pair<size_t, Symbol>, size_t> goto_table;
+
+            
+            size_t production_index(whilelang::Nonterm lhs, std::vector<Symbol> const& rhs) const;
+
             void index_grammar();
             void compute_first_sets();
             std::set<Symbol, decltype(&Symbol::less)> first_of_seq(std::vector<Symbol> const& seq) const;
@@ -111,5 +140,6 @@ namespace parser {
             std::set<LR1Item, LR1ItemLess> initial_items() const;
             std::set<Symbol> all_symbols() const;
             size_t find_or_add_state(std::set<LR1Item, LR1ItemLess> const& items);
+
     };
 }

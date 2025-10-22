@@ -1,6 +1,8 @@
 #include "parser.hpp"
 #include "token.hpp"
 #include "whilelang.hpp"
+#include <iostream>
+#include <queue>
 #include <vector>
 
 namespace parser {
@@ -219,5 +221,144 @@ namespace parser {
         states.push_back(items);
         return states.size() -1;
     }
+    
+    void ParserGenerator::build_automaton (){
+        index_grammar();
+        compute_first_sets();
+        
+        // Initial set
+        auto I0 = initial_items();
+        size_t start_state = find_or_add_state(I0);
 
+        // Worklist
+        std::queue<size_t> worklist;
+        worklist.push(start_state);
+        std::set<size_t> visited;
+        
+        // Build the parsing table
+        while(!worklist.empty()){
+            size_t state_id = worklist.front();
+
+            worklist.pop();
+
+            if(visited.count(state_id)) continue;
+            visited.insert(state_id);
+
+            const auto& I = states[state_id];
+
+            for (const Symbol& X : all_symbols()){
+                auto J = goto_set(I, X);
+            
+                if(!J.empty()){
+                    size_t next_state = find_or_add_state(J);
+                    transitions[{state_id, X}] = next_state;
+
+                    if(!visited.count(next_state)){
+                        worklist.push(next_state);
+                    }
+                }
+            }
+        }
+    
+    }
+
+    size_t ParserGenerator::production_index(whilelang::Nonterm lhs, std::vector<Symbol> const& rhs) const{
+        for(size_t i = 0; i < source_grammar.size(); i++) {
+            if(source_grammar[i].lhs == lhs && source_grammar[i].rhs == rhs) {
+                return i;
+            }
+        }
+        
+        std::cerr << "ERROR: Production not found" << std::endl;
+        std::abort();
+    }
+
+    void ParserGenerator::build_parse_tables(){
+        for (size_t state_id = 0; state_id < states.size(); state_id++){
+            const auto& items = states[state_id];
+
+            for (const LR1Item& item : items) {
+                // case 1: shift
+                if (!item.gamma.empty() && item.gamma.front().is_terminal()){
+                    Symbol a = item.gamma.front();
+
+                    auto trans_it = transitions.find({state_id, a });
+
+                    if(trans_it != transitions.end()){
+                        size_t next_state = trans_it->second;
+                        
+                        auto key = std::make_pair(state_id, a);
+
+                        if(action_table.count(key)){
+                            std::cerr << "Conflict at state" << state_id << " on terminal " << a.id << std::endl;
+                        }
+                        
+                        action_table[key] = {ActionType::SHIFT, next_state};
+                    }
+                }
+
+                // Case 2: reduce
+                
+                else if (item.gamma.empty()) {
+                    bool is_accept = (item.alpha == whilelang::Nonterm::Program && item.a ==END);
+
+                    if(is_accept) {
+                        action_table[{state_id, END}] = {ActionType::ACCEPT, 0};
+                    }
+                    else{
+                        size_t prod_id = production_index(item.alpha, item.beta);
+
+                        auto key = std::make_pair(state_id, item.a);
+
+                        if(action_table.count(key)){
+                            std::cerr << "Conflict at state " << state_id << " on lookahead " << item.a.id << std::endl;
+                        }
+                        
+                        action_table[key] = {ActionType::REDUCE, prod_id}; 
+                    }
+                }
+            }
+
+            // Fill goto
+            for (const auto& [trans_key, next_state] : transitions){
+                if (trans_key.first == state_id && trans_key.second.is_nonterm()){
+                    goto_table[trans_key] = next_state;
+                }
+            }
+        }
+    }
+
+    // Printing tables generated with the help of Anthropic Claude LLM
+    void ParserGenerator::print_action_table() const {
+        std::cout << "ACTION Table:\n";
+        for (const auto& [key, action] : action_table) {
+            auto [state, symbol] = key;
+            std::cout << "State " << state << ", Terminal " << symbol.id << " -> ";
+            
+            switch (action.type) {
+                case ActionType::SHIFT:
+                    std::cout << "SHIFT " << action.value;
+                    break;
+                case ActionType::REDUCE:
+                    std::cout << "REDUCE " << action.value;
+                    break;
+                case ActionType::ACCEPT:
+                    std::cout << "ACCEPT";
+                    break;
+                case ActionType::ERROR:
+                    std::cout << "ERROR";
+                    break;
+            }
+            std::cout << "\n";
+        }
+    }
+
+    void ParserGenerator::print_goto_table() const {
+        std::cout << "\nGOTO Table:\n";
+        for (const auto& [key, next_state] : goto_table) {
+            auto [state, symbol] = key;
+            std::cout << "State " << state << ", Nonterminal " << symbol.id 
+                      << " -> State " << next_state << "\n";
+        }
+    }
 }
