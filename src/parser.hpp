@@ -86,16 +86,26 @@ namespace parser {
         bool operator()(LR1Item const& x, LR1Item const& y) const {
             if (x.it != y.it) return x.it < y.it;
             if (x.alpha != y.alpha) return x.alpha < y.alpha;
-            // this next bit could probably be more efficient but its fine for now
-            if (SymVecLess{}(x.beta, y.beta)) return true;
-            if (SymVecLess{}(y.beta, x.beta)) return false;
-            if (SymVecLess{}(x.gamma, y.gamma)) return true;
-            if (SymVecLess{}(y.gamma, x.gamma)) return false;
-
-            // if we haven't returned by now just check the lookahead
+            
+            if (x.beta != y.beta) {
+                return std::lexicographical_compare(
+                    x.beta.begin(), x.beta.end(),
+                    y.beta.begin(), y.beta.end(),
+                    Symbol::less
+                );
+            }
+            
+            if (x.gamma != y.gamma) {
+                return std::lexicographical_compare(
+                    x.gamma.begin(), x.gamma.end(),
+                    y.gamma.begin(), y.gamma.end(),
+                    Symbol::less
+                );
+            }
+            
             return Symbol::less(x.a, y.a);
         }
-    }; 
+    };
 
     // Parse table stuff
     enum class ActionType {
