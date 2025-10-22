@@ -53,6 +53,18 @@ add_executable(
     src/ast_examples.cpp
 )
 
+add_executable(
+    parser_example
+    src/parser_example.cpp
+    src/parser.cpp
+    src/parser_generator.cpp
+    src/dotgenerator.cpp
+    src/while_parser.cpp
+    src/scanner.cpp
+    src/token.cpp
+)
+target_include_directories(parser_example PRIVATE src)
+
 enable_testing()
 
 add_executable(
