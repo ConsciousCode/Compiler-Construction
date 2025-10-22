@@ -1,4 +1,5 @@
 #include "parser.hpp"
+#include "token.hpp"
 #include "whilelang.hpp"
 #include <vector>
 
@@ -164,11 +165,59 @@ namespace parser {
             if(!item.gamma.empty() && item.gamma.front() == X){
                 LR1Item newItem = item;
 
-                newItem.alpha.push_back(item.gamma.front());
+                newItem.beta.push_back(item.gamma.front());
                 newItem.gamma.erase(newItem.gamma.begin());
 
                 J.insert(newItem);
             }
         }
+
+        return closure(J);
     }
+
+    std::set<Symbol> ParserGenerator::all_symbols() const {
+        std::set<Symbol> symbols;
+
+            
+        // Terminals
+        for(int i = 0; i < static_cast<int>(TokenType::COUNT); i++){
+            symbols.insert(T(static_cast<TokenType>(i)));
+        } 
+        
+        // Nonterminals
+        for (const auto& [nt, _] : by_lhs) {
+            symbols.insert(N(nt));
+        }
+
+        return symbols; 
+    }
+
+    std::set<LR1Item, LR1ItemLess> ParserGenerator::initial_items() const {
+        std::set<LR1Item, LR1ItemLess> I0;
+        
+        whilelang::Nonterm start = whilelang::Nonterm::Program;
+    
+        auto it = by_lhs.find(start);
+
+        if(it != by_lhs.end()) {
+            for (const auto& rhs : it->second){
+                LR1Item item{ItemType::PARTIAL, start,{},rhs, END};
+                I0.insert(item);
+            }
+        }
+
+        return closure(I0);
+    }
+
+    size_t ParserGenerator::find_or_add_state(std::set<LR1Item, LR1ItemLess> const& items){
+        for(size_t i = 0; i < states.size(); i++){ 
+            if(states[i] == items) {
+                return i;
+            }
+        }
+
+        states.push_back(items);
+        return states.size() -1;
+    }
+
 }

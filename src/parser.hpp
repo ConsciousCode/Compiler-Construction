@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <set>
+#include <map>
 #include <vector>
 
 #include "whilelang.hpp"
@@ -91,7 +92,10 @@ namespace parser {
 
         private:
             std::vector<Production> source_grammar;
-            
+            std::vector<std::set<LR1Item, LR1ItemLess>> states;
+
+            std::map<std::pair<size_t, Symbol>, size_t> transitions;
+
             // B -> {rhs1, rhs2...}
             std::unordered_map<whilelang::Nonterm, std::vector<std::vector<Symbol>>> by_lhs;
 
@@ -104,5 +108,8 @@ namespace parser {
             std::set<Symbol, decltype(&Symbol::less)> gamma_then_a(std::vector<Symbol> const& gamma_tail, Symbol aSym) const; 
             std::set<LR1Item, LR1ItemLess> closure(std::set<LR1Item, LR1ItemLess> I) const;
             std::set<LR1Item, LR1ItemLess> goto_set(std::set<LR1Item, LR1ItemLess> const& I, Symbol X) const;
+            std::set<LR1Item, LR1ItemLess> initial_items() const;
+            std::set<Symbol> all_symbols() const;
+            size_t find_or_add_state(std::set<LR1Item, LR1ItemLess> const& items);
     };
 }
