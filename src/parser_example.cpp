@@ -40,12 +40,12 @@ int main(int argc, char* argv[]) {
 
     std::shared_ptr<parser::ParseTreeNode> parse_tree = p.parse(tokens);
     parser::ParseTreeNode::print_tree(parse_tree);
+
+    if (parse_tree) {
+        parser::write_dot_file(parse_tree, "parse_tree.dot");
+    }
+
     ast::Block program = parse_tree->to_ast_block();
-    // graphviz::print_viz_block(program);
-
-    // if (parse_tree) {
-    //     parser::write_dot_file(parse_tree, "parse_tree.dot");
-    // }
-
+    graphviz::print_viz_block(program);
     return 0;
 }
