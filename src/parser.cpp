@@ -121,6 +121,11 @@ ast::Block ParseTreeNode::to_ast_block() {
 
     // Add the first command
     std::cout << *this << std::endl;
+
+    for(auto child : children){
+        std::cout << *child << std::endl;
+    }
+
     if (children[2]->nonterminal == wnt::Cmd) {
         blk.cmds.push_back(children[2]->to_ast_cmd());
     } else {
@@ -144,7 +149,7 @@ ast::Block ParseTreeNode::to_ast_block() {
 ast::Cmd ParseTreeNode::to_ast_cmd() {
     switch (this->cmd_type()) {
     case TokenType::OP_ASSIGN:
-        return ast::Assign{children[0]->get_token_value(), children[2]->to_ast_expr()};
+        return ast::Assign{children[0]->token->lexeme, children[2]->to_ast_expr()};
 
     case TokenType::KW_IF:
         return ast::If{children[1]->to_ast_cond(), children[3]->to_ast_block(),
@@ -167,24 +172,55 @@ ast::Expr ParseTreeNode::to_ast_expr() {
 
     using wnt = whilelang::Nonterm;
 
-    // Handle different expression types
-    if (terminal == TokenType::INTEGER) {
-        return std::stoi(get_token_value());
-    }
-    if (terminal == TokenType::IDENT) {
-        return get_token_value();
-    }
-
-    // Handle arithmetic operations
-    if (nonterminal == wnt::ArithExpr) {
-        auto left = children[0]->to_ast_expr();
-        auto op = children[1]->get_arith_op();
-        auto right = children[2]->to_ast_expr();
-        return ast::Arith::make(op, std::move(left), std::move(right));
+    // Handle terminals (base cases)
+    if (is_terminal) {
+        if (terminal == TokenType::INTEGER) {
+            return int(this->token->value);
+        }
+        if (terminal == TokenType::IDENT) {
+            return this->token->lexeme;
+        }
     }
 
-    std::cerr << "Parse error in expression" << std::endl;
-    std::abort();
+    // Handle nonterminals
+    switch (nonterminal) {
+        case wnt::ArithExpr:
+            if (children.size() == 1) {
+                // ArithExpr -> Term
+                return children[0]->to_ast_expr();
+            } else {
+                // ArithExpr -> ArithExpr AdditiveOp Term
+                auto left = children[0]->to_ast_expr();
+                auto op = children[1]->get_arith_op();
+                auto right = children[2]->to_ast_expr();
+                return ast::Arith::make(op, std::move(left), std::move(right));
+            }
+            
+        case wnt::Term:
+            if (children.size() == 1) {
+                // Term -> Factor
+                return children[0]->to_ast_expr();
+            } else {
+                // Term -> Term * Factor
+                auto left = children[0]->to_ast_expr();
+                auto op = ast::Arith::Op::MUL;
+                auto right = children[2]->to_ast_expr();
+                return ast::Arith::make(op, std::move(left), std::move(right));
+            }
+            
+        case wnt::Factor:
+            if (children.size() == 1) {
+                // Factor -> IDENT or INTEGER
+                return children[0]->to_ast_expr();
+            } else {
+                // Factor -> ( ArithExpr )
+                return children[1]->to_ast_expr();
+            }
+            
+        default:
+            std::cerr << "Parse error in expression: unexpected nonterminal" << std::endl;
+            std::abort();
+    }
 }
 
 ast::Cond ParseTreeNode::to_ast_cond() {
@@ -223,9 +259,6 @@ ast::Cond ParseTreeNode::to_ast_cond() {
     std::abort();
 }
 
-std::string ParseTreeNode::get_token_value() {
-    return "[UNIMPLEMENTED]";
-}
 
 ast::Arith::Op ParseTreeNode::get_arith_op() {
     switch (terminal) {
