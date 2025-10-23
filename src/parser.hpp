@@ -49,6 +49,8 @@ struct Symbol {
     }
 };
 
+std::ostream& operator<<(std::ostream& os, const Symbol& sym);
+
 inline Symbol T(TokenType t) {
     return {SymKind::Terminal, static_cast<uint16_t>(t)};
 }
@@ -84,6 +86,8 @@ struct LR1Item {
                gamma == other.gamma && a == other.a;
     }
 };
+
+std::ostream& operator<<(std::ostream& os, const LR1Item& item);
 
 struct LR1ItemLess {
     bool operator()(LR1Item const& x, LR1Item const& y) const {
