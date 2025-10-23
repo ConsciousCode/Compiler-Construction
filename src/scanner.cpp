@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 #include <string_view>
 #include <unordered_map>
 
@@ -146,7 +147,8 @@ Token Scanner::next_token() {
 
         // Check if it's a keyword
         auto it = keywords.find(std::string_view(start, len));
-        return Token{tokloc, len, it == keywords.end() ? TokenType::IDENT : it->second};
+        return Token{tokloc, len, it == keywords.end() ? TokenType::IDENT : it->second, 0,
+                     std::string(std::string_view(start, len))};
     }
 
     // Check for operators

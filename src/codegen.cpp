@@ -1,0 +1,230 @@
+#include "codegen.hpp"
+#include "emitter.hpp"
+
+#include <set>
+#include <functional>
+#include <algorithm>
+
+using namespace ast;
+
+namespace {
+    void collect_vars_expr(const Expr& e, std::set<std::string>& S) {
+        // int has no variable names -> left out
+        std::visit([&](const auto& node){
+            using T = std::decay_t<decltype(node)>;
+            if constexpr (std::is_same_v<T, std::string>) {
+                S.insert(node);
+            } else if constexpr (std::is_same_v<T, std::shared_ptr<Arith>>){
+                collect_vars_expr(node->left, S);
+                collect_vars_expr(node->right, S);
+            }
+        }, e);
+    }
+
+    void collect_vars_cond(const Cond& c, std::set<std::string>& S) {
+        // Bool has no variable names -> left out
+        std::visit([&](const auto& node) {
+            using T = std::decay_t<decltype(node)>;
+            if constexpr (std::is_same_v<T, std::shared_ptr<Not>>) {
+                collect_vars_cond(node->cond, S);
+            } else if constexpr (std::is_same_v<T, std::shared_ptr<Logical>>) {
+                collect_vars_cond(node->left, S);
+                collect_vars_cond(node->right, S);
+            } else if constexpr (std::is_same_v<T, std::shared_ptr<Comparison>>){
+                collect_vars_expr(node->left, S);
+                collect_vars_expr(node->right, S);
+            }
+        }, c);
+    }
+
+    void collect_vars_cmd(const Cmd& c, std::set<std::string>& S) {
+        std::visit([&](const auto& node) {
+            using T = std::decay_t<decltype(node)>;
+            if constexpr (std::is_same_v<T, Assign>) {
+                // Add assignment variable name Ex: x
+                S.insert(node.name);
+
+                // Collect variables from the expression following the assignment
+                collect_vars_expr(node.value, S);
+            } else if constexpr (std::is_same_v<T, If>) {
+                // Collect variables from condition
+                collect_vars_cond(node.cond, S);
+                
+                // Collect variables from all the commands inside if block
+                for (auto& cc : node.then.cmds) {
+                    collect_vars_cmd(cc,S);
+                }
+                
+                // Collect variables from all commands inside else block
+                for (auto& cc : node.el.cmds) {
+                    collect_vars_cmd(cc, S);
+                }
+            } else if constexpr (std::is_same_v<T, While>) {
+                // Collect variables from condition of while loop
+                collect_vars_cond(node.cond, S);
+
+                // Collect all unique variables from inside while loop body
+                for (auto& cc : node.body.cmds) {
+                    collect_vars_cmd(cc, S);
+                }
+            }
+        }, c);
+    }
+}
+
+void Codegen::collect_vars(const Block& b) {
+    std::set<std::string> S;
+
+    // Collect all the unique variables in the ast
+    for (auto& c : b.cmds) {
+        collect_vars_cmd(c, S);
+    }
+
+    // Converts the set to a vector 
+    vars.assign(S.begin(), S.end());
+
+     // Sorting to make sure the same variable gets the same offset in memory
+    std::sort(vars.begin(), vars.end());
+    
+    // Assigns index for each variable to be used in the offset 
+    for (std::size_t i = 0; i < vars.size(); i++) {
+        slot[vars[i]] = i;
+    }
+}
+
+CodegenOutput Codegen::generate(const Block& program) {
+    collect_vars(program);
+
+    auto offset_of = [&](const std::string& name) -> long {
+        return static_cast<long>(8) * static_cast<long>(slot.at(name));
+    };
+
+    Emitter as;
+
+    as.line(".text", false);
+    as.line(".globl program", false);
+    as.label("program");
+
+    std::function<void(const Expr&, const char*)> emit_expr = [&](const Expr& e, const char* dst) {
+        std::visit([&](const auto& node) {
+            using T = std::decay_t<decltype(node)>;
+            if constexpr (std::is_same_v<T, int>) {
+                as.line(std::string("li ") + dst + ", " + std::to_string(node), true);
+            } else if constexpr (std::is_same_v<T, std::string>) {
+                as.line(std::string("ld ") + dst + ", " + std::to_string(offset_of(node)) + "(a0)", true);
+            } else {
+                emit_expr(node->left, "t0");
+                emit_expr(node->right, "t1");
+                switch (node->op) {
+                    case Arith::Op::ADD: as.line(std::string("add ") + dst + ", t0, t1", true); break;
+                    case Arith::Op::SUB: as.line(std::string("sub ") + dst + ", t0, t1", true); break;
+                    case Arith::Op::MUL: as.line(std::string("mul ") + dst + ", t0, t1", true); break;
+                }
+            }
+        }, e);
+    };
+
+    std::function<void(const Cond&, const std::string&, const std::string&)> emit_cond = [&](const Cond& c, const std::string& Ltrue, const std::string& Lfalse) {
+        std::visit([&](const auto& node) {
+            using T = std::decay_t<decltype(node)>;
+            if constexpr (std::is_same_v<T, bool>) {
+                as.line(std::string("j ") + (node ? Ltrue : Lfalse), true);
+            } else if constexpr (std::is_same_v<T, std::shared_ptr<Not>>) {
+                emit_cond(node->cond, Lfalse, Ltrue);
+            } else if constexpr (std::is_same_v<T, std::shared_ptr<Logical>>) {
+                if (node->op == Logical::Op::AND) {
+                    auto Lmid = as.gensym("L_and");
+                    emit_cond(node->left, Lmid, Lfalse);
+                    as.label(Lmid);
+                    emit_cond(node->right, Ltrue, Lfalse);
+                } else {
+                    auto Lmid = as.gensym("L_or");
+                    emit_cond(node->left, Ltrue, Lmid);
+                    as.label(Lmid);
+                    emit_cond(node->right, Ltrue, Lfalse);
+                }
+            } else {
+                emit_expr(node->left, "t0");
+                emit_expr(node->right, "t1");
+
+                switch(node->op) {
+                    case Comparison::Op::EQ:
+                        as.line(std::string("beq t0, t1, ") + Ltrue, true);
+                        as.line(std::string("j ") + Lfalse, true);
+                        break;
+                    case Comparison::Op::LT:
+                        as.line(std::string("blt t0, t1, ") + Ltrue, true);
+                        as.line(std::string("j ") + Lfalse, true);
+                        break;
+                    case Comparison::Op::LE:
+                        as.line(std::string("bge t1, t0, ") + Ltrue, true);
+                        as.line(std::string("j ") + Lfalse, true);
+                        break;
+                    case Comparison::Op::GT:
+                        as.line(std::string("blt t1, t0, ") + Ltrue, true);
+                        as.line(std::string("j ") + Lfalse, true);
+                        break;
+                    case Comparison::Op::GE:
+                        as.line(std::string("bge t0, t1, ") + Ltrue, true);
+                        as.line(std::string("j ") + Lfalse, true);
+                        break;
+                }
+            }
+        }, c);
+    };
+
+    std::function<void(const Cmd&)> emit_cmd = [&](const Cmd& c) {
+        std::visit([&](const auto& node){
+            using T = std::decay_t<decltype(node)>;
+            if constexpr (std::is_same_v<T, Assign>) {
+                emit_expr(node.value, "t0");
+                as.line(std::string("sd t0, ") + std::to_string(offset_of(node.name)) + "(a0)", true);
+            } else if constexpr (std::is_same_v<T, If>) {
+                auto Ltrue = as.gensym("L_if_true");
+                auto Lfalse = as.gensym("L_if_false");
+                auto Lend = as.gensym("L_if_end");
+                emit_cond(node.cond, Ltrue, Lfalse);
+                as.label(Ltrue);
+                
+                for (auto& s : node.then.cmds) {
+                    emit_cmd(s);
+                }
+
+                as.line(std::string("j ") + Lend, true);
+                as.label(Lfalse);
+
+                for (auto& s : node.el.cmds) {
+                    emit_cmd(s);
+                }
+
+                as.label(Lend);
+            } else if constexpr (std::is_same_v<T, While>) {
+                auto Lcond = as.gensym("L_while_cond");
+                auto Lbody = as.gensym("L_while_body");
+                auto Lend = as.gensym("L_while_end");
+
+                as.label(Lcond);
+                emit_cond(node.cond, Lbody, Lend);
+                as.label(Lbody);
+
+                for (auto& s : node.body.cmds) {
+                    emit_cmd(s);
+                }
+
+                as.line(std::string("j ") + Lcond, true);
+                as.label(Lend);
+            } else {}
+        }, c);
+    };
+
+    for (auto& c : program.cmds) {
+        emit_cmd(c);
+    }
+
+    as.line("ret", true);
+
+    CodegenOutput out;
+    out.riscv = as.str();
+    out.vars = vars;
+    return out;
+}

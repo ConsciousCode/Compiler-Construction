@@ -1,9 +1,11 @@
 #pragma once
 
+#include "ast.hpp"
 #include "token.hpp"
 #include "whilelang.hpp"
 
 #include <algorithm>
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <set>
@@ -47,6 +49,8 @@ struct Symbol {
     }
 };
 
+std::ostream& operator<<(std::ostream& os, const Symbol& sym);
+
 inline Symbol T(TokenType t) {
     return {SymKind::Terminal, static_cast<uint16_t>(t)};
 }
@@ -82,6 +86,8 @@ struct LR1Item {
                gamma == other.gamma && a == other.a;
     }
 };
+
+std::ostream& operator<<(std::ostream& os, const LR1Item& item);
 
 struct LR1ItemLess {
     bool operator()(LR1Item const& x, LR1Item const& y) const {
@@ -165,15 +171,27 @@ struct ParseTreeNode {
     whilelang::Nonterm nonterminal;
     TokenType terminal;
     bool is_terminal;
-    std::string lexeme;
+    std::shared_ptr<Token> token;
     std::vector<std::shared_ptr<ParseTreeNode>> children;
 
-    static std::shared_ptr<ParseTreeNode> make_nonterminal(whilelang::Nonterm nt);
+    static std::shared_ptr<ParseTreeNode> make_nonterminal(whilelang::Nonterm nt, Token t);
 
-    static std::shared_ptr<ParseTreeNode> make_terminal(TokenType tt, std::string lex);
+    static std::shared_ptr<ParseTreeNode> make_terminal(TokenType tt, Token t);
 
     static void print_tree(std::shared_ptr<ParseTreeNode> node, int indent = 0);
+
+    TokenType cmd_type() const;
+    ast::Cmd to_ast_cmd();
+    ast::Block to_ast_block();
+    ast::Expr to_ast_expr();
+    ast::Cond to_ast_cond();
+    std::string get_token_value();
+    ast::Arith::Op get_arith_op();
+    ast::Comparison::Op get_comparison_op();
+    ast::Logical::Op get_logical_op();
 };
+
+std::ostream& operator<<(std::ostream& os, const ParseTreeNode& node);
 
 class Parser {
     const ParserGenerator& pg;
