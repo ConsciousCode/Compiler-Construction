@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <iosfwd>
+#include <string>
 
 /**
  * Stream location metadata.
@@ -84,8 +85,9 @@ struct Token {
     int length;
     TokenType type;
     int64_t value;
+    std::string lexeme;
 
-    Token(Loc loc, int length, TokenType type, int64_t value = 0);
+    Token(Loc loc, int length, TokenType type, int64_t value = 0, std::string lexeme = "");
 
     bool operator==(const Token& other) const;
     bool operator!=(const Token& other) const;

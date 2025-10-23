@@ -78,6 +78,7 @@ add_executable(
     src/parser.cpp
     src/parser_generator.cpp
     src/dotgenerator.cpp
+    src/graphviz.cpp
     src/while_parser.cpp
     src/scanner.cpp
     src/token.cpp
