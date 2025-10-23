@@ -118,31 +118,34 @@ void ParseTreeNode::print_tree(std::shared_ptr<ParseTreeNode> node, int indent) 
 
 ast::Block ParseTreeNode::to_ast_block() {
     using wnt = whilelang::Nonterm;
-
     ast::Block blk;
 
-    // Add the first command
-    std::cout << *this << std::endl;
+    if (children.size() == 1) {
+        // Block -> Cmd (base case)
+        if (children[0]->nonterminal == wnt::Cmd) {
+            blk.cmds.push_back(children[0]->to_ast_cmd());
+        } else {
+            std::cerr << "Parse Error: Expected Cmd in Block" << std::endl;
+            std::abort();
+        }
+    } else if (children.size() == 3) {
+        // Block -> Block ; Cmd (recursive case)
+        if (children[0]->nonterminal == wnt::Block && children[1]->terminal == TokenType::OP_SEMI &&
+            children[2]->nonterminal == wnt::Cmd) {
 
-    for(auto child : children){
-        std::cout << *child << std::endl;
-    }
+            // Recursively get commands from the first block
+            ast::Block rest_block = children[0]->to_ast_block();
+            blk.cmds.insert(blk.cmds.end(), rest_block.cmds.begin(), rest_block.cmds.end());
 
-    if (children[2]->nonterminal == wnt::Cmd) {
-        blk.cmds.push_back(children[2]->to_ast_cmd());
+            // Add the current command
+            blk.cmds.push_back(children[2]->to_ast_cmd());
+        } else {
+            std::cerr << "Parse Error: Malformed Block" << std::endl;
+            std::abort();
+        }
     } else {
-        std::cerr << "Parse Error: Expected Cmd in Block" << std::endl;
+        std::cerr << "Parse Error: Unexpected number of children in Block" << std::endl;
         std::abort();
-    }
-
-    // Recursively process the rest of the block
-    if (children.size() > 1 && children[1]->terminal == TokenType::OP_SEMI &&
-        children[2]->nonterminal == wnt::Block) {
-
-        ast::Block rest_block = children[2]->to_ast_block();
-
-        // Append all commands from the recursive block
-        blk.cmds.insert(blk.cmds.end(), rest_block.cmds.begin(), rest_block.cmds.end());
     }
 
     return blk;
@@ -186,42 +189,42 @@ ast::Expr ParseTreeNode::to_ast_expr() {
 
     // Handle nonterminals
     switch (nonterminal) {
-        case wnt::ArithExpr:
-            if (children.size() == 1) {
-                // ArithExpr -> Term
-                return children[0]->to_ast_expr();
-            } else {
-                // ArithExpr -> ArithExpr AdditiveOp Term
-                auto left = children[0]->to_ast_expr();
-                auto op = children[1]->get_arith_op();
-                auto right = children[2]->to_ast_expr();
-                return ast::Arith::make(op, std::move(left), std::move(right));
-            }
-            
-        case wnt::Term:
-            if (children.size() == 1) {
-                // Term -> Factor
-                return children[0]->to_ast_expr();
-            } else {
-                // Term -> Term * Factor
-                auto left = children[0]->to_ast_expr();
-                auto op = ast::Arith::Op::MUL;
-                auto right = children[2]->to_ast_expr();
-                return ast::Arith::make(op, std::move(left), std::move(right));
-            }
-            
-        case wnt::Factor:
-            if (children.size() == 1) {
-                // Factor -> IDENT or INTEGER
-                return children[0]->to_ast_expr();
-            } else {
-                // Factor -> ( ArithExpr )
-                return children[1]->to_ast_expr();
-            }
-            
-        default:
-            std::cerr << "Parse error in expression: unexpected nonterminal" << std::endl;
-            std::abort();
+    case wnt::ArithExpr:
+        if (children.size() == 1) {
+            // ArithExpr -> Term
+            return children[0]->to_ast_expr();
+        } else {
+            // ArithExpr -> ArithExpr AdditiveOp Term
+            auto left = children[0]->to_ast_expr();
+            auto op = children[1]->get_arith_op();
+            auto right = children[2]->to_ast_expr();
+            return ast::Arith::make(op, std::move(left), std::move(right));
+        }
+
+    case wnt::Term:
+        if (children.size() == 1) {
+            // Term -> Factor
+            return children[0]->to_ast_expr();
+        } else {
+            // Term -> Term * Factor
+            auto left = children[0]->to_ast_expr();
+            auto op = ast::Arith::Op::MUL;
+            auto right = children[2]->to_ast_expr();
+            return ast::Arith::make(op, std::move(left), std::move(right));
+        }
+
+    case wnt::Factor:
+        if (children.size() == 1) {
+            // Factor -> IDENT or INTEGER
+            return children[0]->to_ast_expr();
+        } else {
+            // Factor -> ( ArithExpr )
+            return children[1]->to_ast_expr();
+        }
+
+    default:
+        std::cerr << "Parse error in expression: unexpected nonterminal" << std::endl;
+        std::abort();
     }
 }
 
@@ -229,41 +232,71 @@ ast::Cond ParseTreeNode::to_ast_cond() {
     using wnt = whilelang::Nonterm;
 
     // Handle boolean literals
-    if (terminal == TokenType::KW_TRUE) {
-        return true;
-    }
-    if (terminal == TokenType::KW_FALSE) {
-        return false;
-    }
-
-    // Handle NOT
-    if (nonterminal == wnt::Not) {
-        return ast::Not::make(children[1]->to_ast_cond());
+    if (is_terminal) {
+        if (terminal == TokenType::KW_TRUE) {
+            return true;
+        }
+        if (terminal == TokenType::KW_FALSE) {
+            return false;
+        }
     }
 
-    // Handle comparisons
-    if (nonterminal == wnt::Comparison) {
-        auto left = children[0]->to_ast_expr();
-        auto op = children[1]->get_comparison_op();
-        auto right = children[2]->to_ast_expr();
-        return ast::Comparison::make(op, std::move(left), std::move(right));
-    }
+    switch (nonterminal) {
+    case wnt::Cond:
+        // Cond -> Disjunction
+        return children[0]->to_ast_cond();
 
-    // Handle logical operations
-    if (nonterminal == wnt::Conjunction || nonterminal == wnt::Disjunction) {
-        auto left = children[0]->to_ast_cond();
-        auto op = children[1]->get_logical_op();
-        auto right = children[2]->to_ast_cond();
-        return ast::Logical::make(op, std::move(left), std::move(right));
+    case wnt::Disjunction:
+        if (children.size() == 1) {
+            // Disjunction -> Conjunction
+            return children[0]->to_ast_cond();
+        } else {
+            // Disjunction -> Disjunction OR Conjunction
+            auto left = children[0]->to_ast_cond();
+            auto right = children[2]->to_ast_cond();
+            return ast::Logical::make(ast::Logical::Op::OR, std::move(left), std::move(right));
+        }
+
+    case wnt::Conjunction:
+        if (children.size() == 1) {
+            // Conjunction -> BoolExpr
+            return children[0]->to_ast_cond();
+        } else {
+            // Conjunction -> Conjunction AND BoolExpr
+            auto left = children[0]->to_ast_cond();
+            auto right = children[2]->to_ast_cond();
+            return ast::Logical::make(ast::Logical::Op::AND, std::move(left), std::move(right));
+        }
+
+    case wnt::BoolExpr:
+        if (children.size() == 1) {
+            // BoolExpr -> TRUE or FALSE
+            return children[0]->to_ast_cond();
+        } else if (children.size() == 3 && children[1]->nonterminal == wnt::RelOp) {
+            // BoolExpr -> ArithExpr RelOp ArithExpr (comparison)
+            auto left = children[0]->to_ast_expr();
+            auto op = children[1]->get_comparison_op();
+            auto right = children[2]->to_ast_expr();
+            return ast::Comparison::make(op, std::move(left), std::move(right));
+        } else if (children.size() == 3) {
+            // BoolExpr -> [ BoolExpr ]
+            return children[1]->to_ast_cond();
+        } else if (children.size() == 4) {
+            // BoolExpr -> NOT [ BoolExpr ]
+            return ast::Not::make(children[2]->to_ast_cond());
+        }
+        break;
+
+    default:
+        break;
     }
 
     std::cerr << "Parse error in condition" << std::endl;
     std::abort();
 }
 
-
 ast::Arith::Op ParseTreeNode::get_arith_op() {
-    switch (terminal) {
+    switch (children[0]->terminal) {
     case TokenType::OP_ADD:
         return ast::Arith::Op::ADD;
     case TokenType::OP_SUB:
@@ -276,7 +309,7 @@ ast::Arith::Op ParseTreeNode::get_arith_op() {
     }
 }
 ast::Comparison::Op ParseTreeNode::get_comparison_op() {
-    switch (terminal) {
+    switch (children[0]->terminal) {
     case TokenType::OP_EQ:
         return ast::Comparison::Op::EQ;
     case TokenType::OP_GE:
