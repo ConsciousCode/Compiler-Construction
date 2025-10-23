@@ -101,24 +101,24 @@ CodegenOutput Codegen::generate(const Block& program) {
 
     Emitter as;
 
-    as.line(".text");
-    as.line(".globl program");
+    as.line(".text", false);
+    as.line(".globl program", false);
     as.label("program");
 
     std::function<void(const Expr&, const char*)> emit_expr = [&](const Expr& e, const char* dst) {
         std::visit([&](const auto& node) {
             using T = std::decay_t<decltype(node)>;
             if constexpr (std::is_same_v<T, int>) {
-                as.line(std::string("li ") + dst + ", " + std::to_string(node));
+                as.line(std::string("li ") + dst + ", " + std::to_string(node), true);
             } else if constexpr (std::is_same_v<T, std::string>) {
-                as.line(std::string("ld ") + dst + ", " + std::to_string(offset_of(node)) + "(a0)");
+                as.line(std::string("ld ") + dst + ", " + std::to_string(offset_of(node)) + "(a0)", true);
             } else {
                 emit_expr(node->left, "t0");
                 emit_expr(node->right, "t1");
                 switch (node->op) {
-                    case Arith::Op::ADD: as.line(std::string("add ") + dst + ", t0, t1"); break;
-                    case Arith::Op::SUB: as.line(std::string("sub ") + dst + ", t0, t1"); break;
-                    case Arith::Op::MUL: as.line(std::string("mul ") + dst + ", t0, t1"); break;
+                    case Arith::Op::ADD: as.line(std::string("add ") + dst + ", t0, t1", true); break;
+                    case Arith::Op::SUB: as.line(std::string("sub ") + dst + ", t0, t1", true); break;
+                    case Arith::Op::MUL: as.line(std::string("mul ") + dst + ", t0, t1", true); break;
                 }
             }
         }, e);
@@ -128,7 +128,7 @@ CodegenOutput Codegen::generate(const Block& program) {
         std::visit([&](const auto& node) {
             using T = std::decay_t<decltype(node)>;
             if constexpr (std::is_same_v<T, bool>) {
-                as.line(std::string("j ") + (node ? Ltrue : Lfalse));
+                as.line(std::string("j ") + (node ? Ltrue : Lfalse), true);
             } else if constexpr (std::is_same_v<T, std::shared_ptr<Not>>) {
                 emit_cond(node->cond, Lfalse, Ltrue);
             } else if constexpr (std::is_same_v<T, std::shared_ptr<Logical>>) {
@@ -149,24 +149,24 @@ CodegenOutput Codegen::generate(const Block& program) {
 
                 switch(node->op) {
                     case Comparison::Op::EQ:
-                        as.line(std::string("beq t0, t1, ") + Ltrue);
-                        as.line(std::string("j ") + Lfalse);
+                        as.line(std::string("beq t0, t1, ") + Ltrue, true);
+                        as.line(std::string("j ") + Lfalse, true);
                         break;
                     case Comparison::Op::LT:
-                        as.line(std::string("blt t0, t1, ") + Ltrue);
-                        as.line(std::string("j ") + Lfalse);
+                        as.line(std::string("blt t0, t1, ") + Ltrue, true);
+                        as.line(std::string("j ") + Lfalse, true);
                         break;
                     case Comparison::Op::LE:
-                        as.line(std::string("bge t1, t0, ") + Ltrue);
-                        as.line(std::string("j ") + Lfalse);
+                        as.line(std::string("bge t1, t0, ") + Ltrue, true);
+                        as.line(std::string("j ") + Lfalse, true);
                         break;
                     case Comparison::Op::GT:
-                        as.line(std::string("blt t1, t0, ") + Ltrue);
-                        as.line(std::string("j ") + Lfalse);
+                        as.line(std::string("blt t1, t0, ") + Ltrue, true);
+                        as.line(std::string("j ") + Lfalse, true);
                         break;
                     case Comparison::Op::GE:
-                        as.line(std::string("bge t0, t1, ") + Ltrue);
-                        as.line(std::string("j ") + Lfalse);
+                        as.line(std::string("bge t0, t1, ") + Ltrue, true);
+                        as.line(std::string("j ") + Lfalse, true);
                         break;
                 }
             }
@@ -178,7 +178,7 @@ CodegenOutput Codegen::generate(const Block& program) {
             using T = std::decay_t<decltype(node)>;
             if constexpr (std::is_same_v<T, Assign>) {
                 emit_expr(node.value, "t0");
-                as.line(std::string("sd t0, ") + std::to_string(offset_of(node.name)) + "(a0)");
+                as.line(std::string("sd t0, ") + std::to_string(offset_of(node.name)) + "(a0)", true);
             } else if constexpr (std::is_same_v<T, If>) {
                 auto Ltrue = as.gensym("L_if_true");
                 auto Lfalse = as.gensym("L_if_false");
@@ -190,7 +190,7 @@ CodegenOutput Codegen::generate(const Block& program) {
                     emit_cmd(s);
                 }
 
-                as.line(std::string("j ") + Lend);
+                as.line(std::string("j ") + Lend, true);
                 as.label(Lfalse);
 
                 for (auto& s : node.el.cmds) {
@@ -211,7 +211,7 @@ CodegenOutput Codegen::generate(const Block& program) {
                     emit_cmd(s);
                 }
 
-                as.line(std::string("j ") + Lcond);
+                as.line(std::string("j ") + Lcond, true);
                 as.label(Lend);
             } else {}
         }, c);
@@ -221,7 +221,7 @@ CodegenOutput Codegen::generate(const Block& program) {
         emit_cmd(c);
     }
 
-    as.line("ret");
+    as.line("ret", true);
 
     CodegenOutput out;
     out.riscv = as.str();

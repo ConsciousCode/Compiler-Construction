@@ -1,7 +1,10 @@
 #include "emitter.hpp"
 #include <sstream>
 
-void Emitter::line(const std::string& s) {
+void Emitter::line(const std::string& s, bool tab) {
+    if (tab) {
+        buf += "   ";
+    }
     buf += s;
     buf += '\n';
 }
