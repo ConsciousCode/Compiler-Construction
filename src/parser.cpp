@@ -173,8 +173,6 @@ ast::Cmd ParseTreeNode::to_ast_cmd() {
 }
 
 ast::Expr ParseTreeNode::to_ast_expr() {
-    std::cout << *this << std::endl;
-
     using wnt = whilelang::Nonterm;
 
     // Handle terminals (base cases)
