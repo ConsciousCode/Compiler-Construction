@@ -1,8 +1,8 @@
 #pragma once
 
+#include "ast.hpp"
 #include "token.hpp"
 #include "whilelang.hpp"
-#include "ast.hpp"
 
 #include <algorithm>
 #include <cstdint>
@@ -175,7 +175,6 @@ struct ParseTreeNode {
     static std::shared_ptr<ParseTreeNode> make_terminal(TokenType tt, Token t);
 
     static void print_tree(std::shared_ptr<ParseTreeNode> node, int indent = 0);
-
 
     TokenType cmd_type() const;
     ast::Cmd to_ast_cmd();

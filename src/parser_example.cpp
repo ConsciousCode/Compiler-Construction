@@ -1,8 +1,8 @@
 #include "ast.hpp"
+#include "graphviz.hpp"
 #include "parser.hpp"
 #include "scanner.hpp"
 #include "while_parser.hpp"
-#include "graphviz.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -42,7 +42,6 @@ int main(int argc, char* argv[]) {
     parser::ParseTreeNode::print_tree(parse_tree);
     ast::Block program = parse_tree->to_ast_block();
     // graphviz::print_viz_block(program);
-
 
     // if (parse_tree) {
     //     parser::write_dot_file(parse_tree, "parse_tree.dot");

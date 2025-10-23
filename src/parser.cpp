@@ -1,7 +1,7 @@
 #include "parser.hpp"
 
-#include "token.hpp"
 #include "ast.hpp"
+#include "token.hpp"
 #include "whilelang.hpp"
 
 #include <cstddef>
@@ -51,8 +51,7 @@ std::shared_ptr<ParseTreeNode> Parser::parse(std::vector<Token> const& tokens) {
         Action action = action_it->second;
 
         if (action.type == ActionType::SHIFT) {
-            auto term_node =
-                ParseTreeNode::make_terminal(tokens[pos].type, tokens[pos]);
+            auto term_node = ParseTreeNode::make_terminal(tokens[pos].type, tokens[pos]);
             tree_stack.push(term_node);
 
             state_stack.push(action.value);
@@ -115,10 +114,9 @@ void ParseTreeNode::print_tree(std::shared_ptr<ParseTreeNode> node, int indent) 
     }
 }
 
-
 ast::Block ParseTreeNode::to_ast_block() {
     using wnt = whilelang::Nonterm;
-    
+
     ast::Block blk;
 
     // Add the first command
@@ -129,50 +127,38 @@ ast::Block ParseTreeNode::to_ast_block() {
         std::cerr << "Parse Error: Expected Cmd in Block" << std::endl;
         std::abort();
     }
-    
+
     // Recursively process the rest of the block
-    if (children.size() > 1 &&
-        children[1]->terminal == TokenType::OP_SEMI &&
+    if (children.size() > 1 && children[1]->terminal == TokenType::OP_SEMI &&
         children[2]->nonterminal == wnt::Block) {
-        
+
         ast::Block rest_block = children[2]->to_ast_block();
-        
+
         // Append all commands from the recursive block
-        blk.cmds.insert(blk.cmds.end(), 
-                       rest_block.cmds.begin(), 
-                       rest_block.cmds.end());
+        blk.cmds.insert(blk.cmds.end(), rest_block.cmds.begin(), rest_block.cmds.end());
     }
-    
+
     return blk;
 }
 
 ast::Cmd ParseTreeNode::to_ast_cmd() {
-    switch(this->cmd_type()) {
-        case TokenType::OP_ASSIGN:
-            return ast::Assign{
-                children[0]->get_token_value(),
-                children[2]->to_ast_expr()
-            };
-            
-        case TokenType::KW_IF:
-            return ast::If{
-                children[1]->to_ast_cond(),
-                children[3]->to_ast_block(),
-                children[5]->to_ast_block()
-            };
-            
-        case TokenType::KW_WHILE:
-            return ast::While{
-                children[1]->to_ast_cond(),
-                children[3]->to_ast_block()
-            };
-            
-        case TokenType::KW_SKIP:
-            return ast::Skip{};
-            
-        default:
-            std::cerr << "Parse error when parsing ast cmd" << std::endl;
-            std::abort();
+    switch (this->cmd_type()) {
+    case TokenType::OP_ASSIGN:
+        return ast::Assign{children[0]->get_token_value(), children[2]->to_ast_expr()};
+
+    case TokenType::KW_IF:
+        return ast::If{children[1]->to_ast_cond(), children[3]->to_ast_block(),
+                       children[5]->to_ast_block()};
+
+    case TokenType::KW_WHILE:
+        return ast::While{children[1]->to_ast_cond(), children[3]->to_ast_block()};
+
+    case TokenType::KW_SKIP:
+        return ast::Skip{};
+
+    default:
+        std::cerr << "Parse error when parsing ast cmd" << std::endl;
+        std::abort();
     }
 }
 
@@ -180,7 +166,7 @@ ast::Expr ParseTreeNode::to_ast_expr() {
     std::cout << *this << std::endl;
 
     using wnt = whilelang::Nonterm;
-    
+
     // Handle different expression types
     if (terminal == TokenType::INTEGER) {
         return std::stoi(get_token_value());
@@ -188,7 +174,7 @@ ast::Expr ParseTreeNode::to_ast_expr() {
     if (terminal == TokenType::IDENT) {
         return get_token_value();
     }
-    
+
     // Handle arithmetic operations
     if (nonterminal == wnt::ArithExpr) {
         auto left = children[0]->to_ast_expr();
@@ -196,14 +182,14 @@ ast::Expr ParseTreeNode::to_ast_expr() {
         auto right = children[2]->to_ast_expr();
         return ast::Arith::make(op, std::move(left), std::move(right));
     }
-    
+
     std::cerr << "Parse error in expression" << std::endl;
     std::abort();
 }
 
 ast::Cond ParseTreeNode::to_ast_cond() {
     using wnt = whilelang::Nonterm;
-    
+
     // Handle boolean literals
     if (terminal == TokenType::KW_TRUE) {
         return true;
@@ -211,12 +197,12 @@ ast::Cond ParseTreeNode::to_ast_cond() {
     if (terminal == TokenType::KW_FALSE) {
         return false;
     }
-    
+
     // Handle NOT
     if (nonterminal == wnt::Not) {
         return ast::Not::make(children[1]->to_ast_cond());
     }
-    
+
     // Handle comparisons
     if (nonterminal == wnt::Comparison) {
         auto left = children[0]->to_ast_expr();
@@ -224,7 +210,7 @@ ast::Cond ParseTreeNode::to_ast_cond() {
         auto right = children[2]->to_ast_expr();
         return ast::Comparison::make(op, std::move(left), std::move(right));
     }
-    
+
     // Handle logical operations
     if (nonterminal == wnt::Conjunction || nonterminal == wnt::Disjunction) {
         auto left = children[0]->to_ast_cond();
@@ -232,60 +218,56 @@ ast::Cond ParseTreeNode::to_ast_cond() {
         auto right = children[2]->to_ast_cond();
         return ast::Logical::make(op, std::move(left), std::move(right));
     }
-    
+
     std::cerr << "Parse error in condition" << std::endl;
     std::abort();
 }
 
-
-std::string ParseTreeNode::get_token_value(){
+std::string ParseTreeNode::get_token_value() {
     return "[UNIMPLEMENTED]";
 }
 
-ast::Arith::Op ParseTreeNode::get_arith_op(){
+ast::Arith::Op ParseTreeNode::get_arith_op() {
     switch (terminal) {
-        case TokenType::OP_ADD:
-            return ast::Arith::Op::ADD;
-        case TokenType::OP_SUB:
-            return ast::Arith::Op::SUB;
-        case TokenType::OP_MUL:
-            return ast::Arith::Op::MUL;
-        default:
-            std::cerr << "Parse Error: Expected arith operation" << std::endl;
-            std::abort();
+    case TokenType::OP_ADD:
+        return ast::Arith::Op::ADD;
+    case TokenType::OP_SUB:
+        return ast::Arith::Op::SUB;
+    case TokenType::OP_MUL:
+        return ast::Arith::Op::MUL;
+    default:
+        std::cerr << "Parse Error: Expected arith operation" << std::endl;
+        std::abort();
     }
 }
-ast::Comparison::Op ParseTreeNode::get_comparison_op(){
+ast::Comparison::Op ParseTreeNode::get_comparison_op() {
     switch (terminal) {
-        case TokenType::OP_EQ:
-            return ast::Comparison::Op::EQ;
-        case TokenType::OP_GE:
-            return ast::Comparison::Op::GE;
-        case TokenType::OP_GT:
-            return ast::Comparison::Op::GT;
-        case TokenType::OP_LE:
-            return ast::Comparison::Op::LE;
-        case TokenType::OP_LT:
-            return ast::Comparison::Op::LT;
-        default:
-            std::cerr << "Parse Error: Expected Comparison Operation" << std::endl;
-            std::abort();
+    case TokenType::OP_EQ:
+        return ast::Comparison::Op::EQ;
+    case TokenType::OP_GE:
+        return ast::Comparison::Op::GE;
+    case TokenType::OP_GT:
+        return ast::Comparison::Op::GT;
+    case TokenType::OP_LE:
+        return ast::Comparison::Op::LE;
+    case TokenType::OP_LT:
+        return ast::Comparison::Op::LT;
+    default:
+        std::cerr << "Parse Error: Expected Comparison Operation" << std::endl;
+        std::abort();
     }
 }
 
-/* 
-* Gets the command type by looking at the children of a command node.
-*/
+/*
+ * Gets the command type by looking at the children of a command node.
+ */
 TokenType ParseTreeNode::cmd_type() const {
-    for(std::shared_ptr<ParseTreeNode> child : children){
-        if(child->is_terminal){
+    for (std::shared_ptr<ParseTreeNode> child : children) {
+        if (child->is_terminal) {
             TokenType t = child->terminal;
 
-            if(t == TokenType::OP_ASSIGN ||
-                t == TokenType::KW_WHILE ||
-                t == TokenType::KW_IF ||
-                t == TokenType::KW_SKIP
-            )
+            if (t == TokenType::OP_ASSIGN || t == TokenType::KW_WHILE || t == TokenType::KW_IF ||
+                t == TokenType::KW_SKIP)
                 return t;
         }
     }
@@ -294,29 +276,33 @@ TokenType ParseTreeNode::cmd_type() const {
     std::abort();
 }
 
-ast::Logical::Op ParseTreeNode::get_logical_op(){
+ast::Logical::Op ParseTreeNode::get_logical_op() {
     switch (terminal) {
-        case TokenType::OP_AND:
-            return ast::Logical::Op::AND;
-        case TokenType::OP_OR:
-            return ast::Logical::Op::OR;
-        default:
-            std::cerr << "Parse Error: Expected Logical Operation" << std::endl;
-            std::abort();
+    case TokenType::OP_AND:
+        return ast::Logical::Op::AND;
+    case TokenType::OP_OR:
+        return ast::Logical::Op::OR;
+    default:
+        std::cerr << "Parse Error: Expected Logical Operation" << std::endl;
+        std::abort();
     }
 }
 
 std::ostream& operator<<(std::ostream& os, const ParseTreeNode& node) {
     if (node.is_terminal) {
-        os << "Terminal(" << node.terminal << ", \"" << node.token->lexeme << " [" << node.token->value << " ]" "\")";
+        os << "Terminal(" << node.terminal << ", \"" << node.token->lexeme << " ["
+           << node.token->value
+           << " ]"
+              "\")";
     } else {
         os << "Nonterminal(" << node.nonterminal << ")";
     }
-    
+
     if (!node.children.empty()) {
         os << " [";
         for (size_t i = 0; i < node.children.size(); ++i) {
-            if (i > 0) os << ", ";
+            if (i > 0)
+                os << ", ";
             if (node.children[i]->is_terminal) {
                 os << "T:" << node.children[i]->terminal;
             } else {
@@ -325,7 +311,7 @@ std::ostream& operator<<(std::ostream& os, const ParseTreeNode& node) {
         }
         os << "]";
     }
-    
+
     return os;
 }
 
