@@ -55,6 +55,8 @@ add_executable(wisc
     src/scanner.cpp
     src/token.cpp
 )
+target_compile_options(wisc PRIVATE -fexceptions)
+
 target_link_libraries(wisc argparse)
 
 add_executable(scanner_example

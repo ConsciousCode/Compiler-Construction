@@ -15,10 +15,16 @@ int main() {
         const std::string path = "examples/add.while";
 
         Scanner scanner(path.c_str());
-        Parser parser = generate_while_parser();
-        ParseTreeNode tree = parser.parse(scanner);
+        std::vector<Token> tokens;
 
-        ast::Block program = build_ast_from_parse(tree);
+        for (Token tok = scanner.next_token(); tok.type != TokenType::ERROR_EOF && !tok.is_error(); tok = scanner.next_token()) {
+            tokens.push_back(tok);
+        }
+
+        parser::Parser parser = generate_while_parser();
+        std::shared_ptr<parser::ParseTreeNode> tree = parser.parse(tokens);
+
+        ast::Block program = build_ast_from_parse(*tree);
 
         Codegen cg;
         CodegenOutput out = cg.generate(program);
