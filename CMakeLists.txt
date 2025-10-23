@@ -44,9 +44,6 @@ add_executable(wisc
     src/codegen.cpp
     src/emitter.cpp
 
-    # AST
-    src/ast_builder.cpp
-
     # Parser + scanner
     src/parser.cpp
     src/parser_generator.cpp

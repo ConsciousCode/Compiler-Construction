@@ -1,42 +1,54 @@
+#include "ast.hpp"
+#include "parser.hpp"
+#include "scanner.hpp"
+#include "while_parser.hpp"
+#include "codegen.cpp"
+
 #include <fstream>
 #include <iostream>
-#include <stdexcept>
+#include <vector>
 
-
-#include "scanner.hpp"
-#include "parser.hpp"
-#include "while_parser.hpp"
-#include "ast.hpp"
-#include "codegen.hpp"
-#include "ast_builder.hpp"
-
-int main() {
-    try {
-        const std::string path = "examples/add.while";
-
-        Scanner scanner(path.c_str());
-        std::vector<Token> tokens;
-
-        for (Token tok = scanner.next_token(); tok.type != TokenType::ERROR_EOF && !tok.is_error(); tok = scanner.next_token()) {
-            tokens.push_back(tok);
-        }
-
-        parser::Parser parser = generate_while_parser();
-        std::shared_ptr<parser::ParseTreeNode> tree = parser.parse(tokens);
-
-        ast::Block program = build_ast_from_parse(*tree);
-
-        Codegen cg;
-        CodegenOutput out = cg.generate(program);
-
-        std::ofstream ofs("program.s");
-        ofs << out.riscv;
-        ofs.close();
-
-        std::cerr << "Wrote program.s with " << out.vars.size() << " vars.\n";
-        return 0;
-    } catch (const std::exception& e) {
-        std::cerr << "Error: "  << e.what() << "\n";
+int main(int argc, char* argv[]) {
+    if (argc < 2) {
+        std::cerr << "Usage: " << argv[0] << " <input_file>" << std::endl;
         return 1;
     }
+
+    // Load and read file;
+    std::ifstream ifs(argv[1]);
+    std::string prog, line;
+    while (std::getline(ifs, line)) {
+        prog += line + "\n";
+    }
+    ifs.close();
+
+    std::vector<Token> tokens;
+
+    Scanner s = Scanner(prog.c_str());
+    Token t = s.next_token();
+    while (t.type != TokenType::ERROR_EOF) {
+        std::cout << t;
+        if (t.is_error())
+            break;
+        tokens.push_back(t);
+        t = s.next_token();
+    }
+
+    parser::ParserGenerator pg = generate_while_parser();
+
+    parser::Parser p(pg);
+
+    std::shared_ptr<parser::ParseTreeNode> parse_tree = p.parse(tokens);
+    parser::ParseTreeNode::print_tree(parse_tree);
+
+    ast::Block program = parse_tree->to_ast_block();
+    
+    Codegen cg;
+    CodegenOutput out = cg.generate(program);
+
+    std::ofstream ofs("program.s");
+    ofs << out.riscv;
+    std::cerr << "Wrote program.s with " << out.vars.size() << " vars.\n";
+
+    return 0;
 }
