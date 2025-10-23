@@ -308,8 +308,16 @@ void ParserGenerator::build_parse_tables() {
                     auto key = std::make_pair(state_id, a);
 
                     if (action_table.count(key)) {
-                        std::cerr << "Conflict at state" << state_id << " on terminal " << a.id
-                                  << std::endl;
+                        auto existing = action_table[key];
+                        if (existing.type != ActionType::SHIFT || existing.value != next_state) {
+                            std::cerr << "Conflict at state " << state_id << " on terminal " << a.id
+                                      << std::endl;
+                            std::cerr << "  Existing action: "
+                                      << (existing.type == ActionType::SHIFT ? "SHIFT" : "REDUCE")
+                                      << " " << existing.value << std::endl;
+                            std::cerr << "  New action: SHIFT " << next_state << std::endl;
+                            std::cerr << "  Item: " << item << std::endl;
+                        }
                     }
 
                     action_table[key] = {ActionType::SHIFT, next_state};
@@ -329,8 +337,18 @@ void ParserGenerator::build_parse_tables() {
                     auto key = std::make_pair(state_id, item.a);
 
                     if (action_table.count(key)) {
-                        std::cerr << "Conflict at state " << state_id << " on lookahead "
-                                  << item.a.id << std::endl;
+                        auto existing = action_table[key];
+                        if (existing.type != ActionType::REDUCE || existing.value != prod_id) {
+                            std::cerr << "Conflict at state " << state_id << " on lookahead "
+                                      << item.a.id << std::endl;
+                            std::cerr << "  Existing action: "
+                                      << (existing.type == ActionType::SHIFT    ? "SHIFT"
+                                          : existing.type == ActionType::REDUCE ? "REDUCE"
+                                                                                : "ACCEPT")
+                                      << " " << existing.value << std::endl;
+                            std::cerr << "  New action: REDUCE " << prod_id << std::endl;
+                            std::cerr << "  Item: " << item << std::endl;
+                        }
                     }
 
                     action_table[key] = {ActionType::REDUCE, prod_id};
