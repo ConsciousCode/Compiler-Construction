@@ -9,13 +9,12 @@ using namespace ast;
 
 namespace {
     void collect_vars_expr(const Expr& e, std::set<std::string>& S) {
+        // int has no variable names -> left out
         std::visit([&](const auto& node){
             using T = std::decay_t<decltype(node)>;
-            if constexpr (std::is_same_v<T, int>) {
-
-            } else if constexpr (std::is_same_v<T, std::string>) {
+            if constexpr (std::is_same_v<T, std::string>) {
                 S.insert(node);
-            } else {
+            } else if constexpr (std::is_same_v<T, std::shared_ptr<Arith>>){
                 collect_vars_expr(node->left, S);
                 collect_vars_expr(node->right, S);
             }
@@ -23,16 +22,15 @@ namespace {
     }
 
     void collect_vars_cond(const Cond& c, std::set<std::string>& S) {
+        // Bool has no variable names -> left out
         std::visit([&](const auto& node) {
             using T = std::decay_t<decltype(node)>;
-            if constexpr (std::is_same_v<T, bool>) {
-
-            } else if constexpr (std::is_same_v<T, std::shared_ptr<Not>>) {
+            if constexpr (std::is_same_v<T, std::shared_ptr<Not>>) {
                 collect_vars_cond(node->cond, S);
             } else if constexpr (std::is_same_v<T, std::shared_ptr<Logical>>) {
                 collect_vars_cond(node->left, S);
                 collect_vars_cond(node->right, S);
-            } else {
+            } else if constexpr (std::is_same_v<T, std::shared_ptr<Comparison>>){
                 collect_vars_expr(node->left, S);
                 collect_vars_expr(node->right, S);
             }
@@ -43,38 +41,52 @@ namespace {
         std::visit([&](const auto& node) {
             using T = std::decay_t<decltype(node)>;
             if constexpr (std::is_same_v<T, Assign>) {
+                // Add assignment variable name Ex: x
                 S.insert(node.name);
+
+                // Collect variables from the expression following the assignment
                 collect_vars_expr(node.value, S);
             } else if constexpr (std::is_same_v<T, If>) {
+                // Collect variables from condition
                 collect_vars_cond(node.cond, S);
                 
+                // Collect variables from all the commands inside if block
                 for (auto& cc : node.then.cmds) {
                     collect_vars_cmd(cc,S);
                 }
-
+                
+                // Collect variables from all commands inside else block
                 for (auto& cc : node.el.cmds) {
                     collect_vars_cmd(cc, S);
                 }
             } else if constexpr (std::is_same_v<T, While>) {
+                // Collect variables from condition of while loop
                 collect_vars_cond(node.cond, S);
 
+                // Collect all unique variables from inside while loop body
                 for (auto& cc : node.body.cmds) {
                     collect_vars_cmd(cc, S);
                 }
-            } else {}
+            }
         }, c);
     }
 }
 
 void Codegen::collect_vars(const Block& b) {
     std::set<std::string> S;
+
+    // Collect all the unique variables in the ast
     for (auto& c : b.cmds) {
         collect_vars_cmd(c, S);
     }
 
+    // Converts the set to a vector 
     vars.assign(S.begin(), S.end());
+
+     // Sorting to make sure the same variable gets the same offset in memory
     std::sort(vars.begin(), vars.end());
     
+    // Assigns index for each variable to be used in the offset 
     for (std::size_t i = 0; i < vars.size(); i++) {
         slot[vars[i]] = i;
     }
