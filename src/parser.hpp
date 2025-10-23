@@ -2,6 +2,7 @@
 
 #include "token.hpp"
 #include "whilelang.hpp"
+#include "ast.hpp"
 
 #include <algorithm>
 #include <map>
@@ -173,7 +174,20 @@ struct ParseTreeNode {
     static std::shared_ptr<ParseTreeNode> make_terminal(TokenType tt, std::string lex);
 
     static void print_tree(std::shared_ptr<ParseTreeNode> node, int indent = 0);
+
+
+    TokenType cmd_type() const;
+    ast::Cmd to_ast_cmd();
+    ast::Block to_ast_block();
+    ast::Expr to_ast_expr();
+    ast::Cond to_ast_cond();
+    std::string get_token_value();
+    ast::Arith::Op get_arith_op();
+    ast::Comparison::Op get_comparison_op();
+    ast::Logical::Op get_logical_op();
 };
+
+std::ostream& operator<<(std::ostream& os, const ParseTreeNode& node);
 
 class Parser {
     const ParserGenerator& pg;
