@@ -97,8 +97,8 @@ std::ostream& operator<<(std::ostream& os, const Token& t) {
     return os << "Token{" << t.loc << ", " << t.length << ", " << t.type << ", " << t.value << "}";
 }
 
-Token::Token(Loc loc, int length, TokenType type, int64_t value)
-    : loc(loc), length(length), type(type), value(value) {}
+Token::Token(Loc loc, int length, TokenType type, int64_t value, std::string lexeme)
+    : loc(loc), length(length), type(type), value(value), lexeme(lexeme){}
 
 bool Token::operator==(const Token& other) const {
     return loc == other.loc && length == other.length && type == other.type && value == other.value;

@@ -5,6 +5,7 @@
 #include "ast.hpp"
 
 #include <algorithm>
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <set>
@@ -166,12 +167,12 @@ struct ParseTreeNode {
     whilelang::Nonterm nonterminal;
     TokenType terminal;
     bool is_terminal;
-    std::string lexeme;
+    std::shared_ptr<Token> token;
     std::vector<std::shared_ptr<ParseTreeNode>> children;
 
     static std::shared_ptr<ParseTreeNode> make_nonterminal(whilelang::Nonterm nt);
 
-    static std::shared_ptr<ParseTreeNode> make_terminal(TokenType tt, std::string lex);
+    static std::shared_ptr<ParseTreeNode> make_terminal(TokenType tt, Token t);
 
     static void print_tree(std::shared_ptr<ParseTreeNode> node, int indent = 0);
 

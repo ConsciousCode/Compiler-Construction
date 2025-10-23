@@ -20,11 +20,11 @@ std::shared_ptr<ParseTreeNode> ParseTreeNode::make_nonterminal(whilelang::Nonter
     return node;
 }
 
-std::shared_ptr<ParseTreeNode> ParseTreeNode::make_terminal(TokenType tt, std::string lex) {
+std::shared_ptr<ParseTreeNode> ParseTreeNode::make_terminal(TokenType tt, Token t) {
     auto node = std::make_shared<ParseTreeNode>();
     node->is_terminal = true;
     node->terminal = tt;
-    node->lexeme = lex;
+    node->token = std::make_shared<Token>(std::move(t));
     return node;
 }
 
@@ -52,7 +52,7 @@ std::shared_ptr<ParseTreeNode> Parser::parse(std::vector<Token> const& tokens) {
 
         if (action.type == ActionType::SHIFT) {
             auto term_node =
-                ParseTreeNode::make_terminal(tokens[pos].type, std::to_string(tokens[pos].value));
+                ParseTreeNode::make_terminal(tokens[pos].type, tokens[pos]);
             tree_stack.push(term_node);
 
             state_stack.push(action.value);
@@ -105,7 +105,7 @@ void ParseTreeNode::print_tree(std::shared_ptr<ParseTreeNode> node, int indent) 
 
     if (node->is_terminal) {
 
-        std::cout << prefix << "Terminal: " << node->terminal << "(" << node->lexeme << ")"
+        std::cout << prefix << "Terminal: " << node->terminal << "(" << node->token->lexeme << ")"
                   << std::endl;
     } else {
         std::cout << prefix << "Nonterminal: " << node->nonterminal << std::endl;
@@ -308,7 +308,7 @@ ast::Logical::Op ParseTreeNode::get_logical_op(){
 
 std::ostream& operator<<(std::ostream& os, const ParseTreeNode& node) {
     if (node.is_terminal) {
-        os << "Terminal(" << node.terminal << ", \"" << node.lexeme << "\")";
+        os << "Terminal(" << node.terminal << ", \"" << node.token->lexeme << " [" << node.token->value << " ]" "\")";
     } else {
         os << "Nonterminal(" << node.nonterminal << ")";
     }

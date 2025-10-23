@@ -17,8 +17,8 @@ int DotGenerator::generate_node(std::shared_ptr<ParseTreeNode> node) {
     if (node->is_terminal) {
         // Terminal nodes - use box shape and different color
         dot << "  node" << current_id << " [label=\"" << node->terminal;
-        if (!node->lexeme.empty()) {
-            dot << "\\n'" << escape_dot(node->lexeme) << "'";
+        if (!node->token->lexeme.empty()) {
+            dot << "\\n'" << escape_dot(node->token->lexeme) << "'";
         }
         dot << "\", shape=box, style=filled, fillcolor=lightblue];\n";
     } else {
