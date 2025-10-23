@@ -170,7 +170,7 @@ struct ParseTreeNode {
     std::shared_ptr<Token> token;
     std::vector<std::shared_ptr<ParseTreeNode>> children;
 
-    static std::shared_ptr<ParseTreeNode> make_nonterminal(whilelang::Nonterm nt);
+    static std::shared_ptr<ParseTreeNode> make_nonterminal(whilelang::Nonterm nt, Token t);
 
     static std::shared_ptr<ParseTreeNode> make_terminal(TokenType tt, Token t);
 

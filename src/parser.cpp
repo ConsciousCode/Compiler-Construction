@@ -8,15 +8,17 @@
 #include <cstdlib>
 #include <iostream>
 #include <memory>
+#include <ostream>
 #include <stack>
 #include <string>
 
 namespace parser {
 
-std::shared_ptr<ParseTreeNode> ParseTreeNode::make_nonterminal(whilelang::Nonterm nt) {
+std::shared_ptr<ParseTreeNode> ParseTreeNode::make_nonterminal(whilelang::Nonterm nt, Token t) {
     auto node = std::make_shared<ParseTreeNode>();
     node->is_terminal = false;
     node->nonterminal = nt;
+    node->token = std::make_shared<Token>(std::move(t));
     return node;
 }
 
@@ -59,7 +61,7 @@ std::shared_ptr<ParseTreeNode> Parser::parse(std::vector<Token> const& tokens) {
         } else if (action.type == ActionType::REDUCE) {
             const Production& prod = pg.get_production(action.value);
 
-            auto nt_node = ParseTreeNode::make_nonterminal(prod.lhs);
+            auto nt_node = ParseTreeNode::make_nonterminal(prod.lhs, tokens[pos]);
 
             // Pop RHS.size smbols from stacks
             size_t rhs_size = prod.rhs.size();
