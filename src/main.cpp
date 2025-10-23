@@ -2,7 +2,7 @@
 #include "parser.hpp"
 #include "scanner.hpp"
 #include "while_parser.hpp"
-#include "codegen.cpp"
+#include "codegen.hpp"
 
 #include <fstream>
 #include <iostream>
