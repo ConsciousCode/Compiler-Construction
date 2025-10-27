@@ -192,7 +192,7 @@ ast::Expr ParseTreeNode::to_ast_expr() {
             // ArithExpr -> Term
             return children[0]->to_ast_expr();
         } else {
-            // ArithExpr -> ArithExpr AdditiveOp Term
+            // ArithExpr -> ArithExpr ArithOp Term
             auto left = children[0]->to_ast_expr();
             auto op = children[1]->get_arith_op();
             auto right = children[2]->to_ast_expr();
