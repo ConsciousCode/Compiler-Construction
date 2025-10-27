@@ -12,8 +12,6 @@
 #include "scanner.hpp"
 #include "while_parser.hpp"
 
-// Copied from codegen.cpp, should probably be factored out
-
 /**
  * https://stackoverflow.com/questions/2896600/#answer-24315631
  */
@@ -148,7 +146,7 @@ std::string to_c_inner(const ast::Block& block) {
                 code << "\n}";
             }
             else if constexpr(std::is_same_v<T, ast::Skip>) {
-                code << "{}";
+                code << ";";
             }
             else {
                 static_assert(false, "Unsupported command");
