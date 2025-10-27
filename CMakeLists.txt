@@ -43,6 +43,7 @@ add_executable(wisc
     # Codegen
     src/codegen.cpp
     src/emitter.cpp
+    src/collect_vars.cpp
 
     # Parser + scanner
     src/parser.cpp
@@ -89,6 +90,20 @@ add_executable(
     src/scanner.cpp
     src/token.cpp
     src/scanner_test.cpp
+)
+
+add_executable(
+    cgen
+    src/cgen.cpp
+    src/collect_vars.cpp
+
+    # Parser + scanner
+    src/parser.cpp
+    src/parser_generator.cpp
+    src/dotgenerator.cpp
+    src/while_parser.cpp
+    src/scanner.cpp
+    src/token.cpp
 )
 
 target_compile_definitions(scanner_test PRIVATE
