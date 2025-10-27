@@ -1,6 +1,6 @@
 .text
-.globl program
-program:
+.globl fibonacci
+fibonacci:
    li t0, 0
    sd t0, 0(a0)
    li t0, 1

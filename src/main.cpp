@@ -7,12 +7,18 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <filesystem>
+#include <string>
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
         std::cerr << "Usage: " << argv[0] << " <input_file>" << std::endl;
         return 1;
     }
+
+    // Load in program name
+    std::filesystem::path input_path(argv[1]);
+    std::string program_name = input_path.stem().string();
 
     // Load and read file;
     std::ifstream ifs(argv[1]);
@@ -44,11 +50,12 @@ int main(int argc, char* argv[]) {
     ast::Block program = parse_tree->to_ast_block();
     
     Codegen cg;
-    CodegenOutput out = cg.generate(program);
+    CodegenOutput out = cg.generate(program, program_name);
 
-    std::ofstream ofs("program.s");
+    std::string output_file = program_name + ".s";
+    std::ofstream ofs(output_file);
     ofs << out.riscv;
-    std::cerr << "Wrote program.s with " << out.vars.size() << " vars.\n";
+    std::cerr << "Wrote " + output_file + " with " << out.vars.size() << " vars.\n";
 
     return 0;
 }

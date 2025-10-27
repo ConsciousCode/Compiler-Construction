@@ -12,7 +12,7 @@ struct CodegenOutput {
 
 class Codegen {
     public:
-        CodegenOutput generate(const ast::Block& program);
+        CodegenOutput generate(const ast::Block& program, std::string program_name);
 
     private:
         std::unordered_map<std::string, std::size_t> slot;

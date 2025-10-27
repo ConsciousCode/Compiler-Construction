@@ -92,7 +92,7 @@ void Codegen::collect_vars(const Block& b) {
     }
 }
 
-CodegenOutput Codegen::generate(const Block& program) {
+CodegenOutput Codegen::generate(const Block& program, std::string program_name) {
     collect_vars(program);
 
     auto offset_of = [&](const std::string& name) -> long {
@@ -102,8 +102,9 @@ CodegenOutput Codegen::generate(const Block& program) {
     Emitter as;
 
     as.line(".text", false);
-    as.line(".globl program", false);
-    as.label("program");
+    std::string global_name = ".globl " + program_name;
+    as.line(global_name, false);
+    as.label(program_name);
 
     std::function<void(const Expr&, const char*)> emit_expr = [&](const Expr& e, const char* dst) {
         std::visit([&](const auto& node) {
