@@ -46,3 +46,9 @@ Output vars order, `a, b, n, output, t, z`
 gcc collatz.s ./test/main.c -DPROGRAM_NAME=collatz -o run_clz
 ./run_clz 10 0 0 0 0 0 
 ```
+#### Stress Factorial
+Output vars order, `input, i, output, t, x, y, z`
+```bash
+gcc stress_factorial.s ./test/main.c -DPROGRAM_NAME=stress_factorial -o run_sfact
+./run_sfact 0 5 0 0 0 0 0
+```
