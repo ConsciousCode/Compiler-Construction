@@ -30,7 +30,10 @@ struct Symbol {
     }
 
     inline bool operator<(const Symbol& other) const {
-        return less(*this, other);
+        if (kind != other.kind)
+            return kind < other.kind;
+        else
+            return id < other.id;
     }
 
     inline bool operator==(const Symbol& other) const {
@@ -157,7 +160,7 @@ class ParserGenerator {
     std::unordered_map<whilelang::Nonterm, std::vector<std::vector<Symbol>>> by_lhs;
 
     // FIRST sets: maps nonterminal → set of terminals that can start it
-    std::unordered_map<whilelang::Nonterm, std::set<Symbol, decltype(&Symbol::less)>> FIRST_NT{};
+    std::unordered_map<whilelang::Nonterm, std::set<Symbol>> FIRST_NT{};
 
     // LR(1) parse tables
     std::map<std::pair<size_t, Symbol>, Action> action_table;  // (state, terminal) → action
