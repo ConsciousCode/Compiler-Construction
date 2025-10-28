@@ -45,8 +45,9 @@ std::shared_ptr<ParseTreeNode> Parser::parse(std::vector<Token> const& tokens) {
         auto action_it = pg.action_table.find(key);
 
         if (action_it == pg.action_table.end()) {
-            std::cerr << "Parse error: no action for state " << current_state << " and symbol "
-                      << (int)lookahead.kind << ":" << lookahead.id << std::endl;
+           
+            std::cerr << "Parse error at " << tokens[pos].loc.line << ":" << tokens[pos].loc.col
+                      << " unexpected token " << tokens[pos].type << std::endl; 
             return nullptr;
         }
 
@@ -192,7 +193,7 @@ ast::Expr ParseTreeNode::to_ast_expr() {
             // ArithExpr -> Term
             return children[0]->to_ast_expr();
         } else {
-            // ArithExpr -> ArithExpr AdditiveOp Term
+            // ArithExpr -> ArithExpr ArithOp Term
             auto left = children[0]->to_ast_expr();
             auto op = children[1]->get_arith_op();
             auto right = children[2]->to_ast_expr();
