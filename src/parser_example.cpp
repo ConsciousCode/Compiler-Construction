@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
     Scanner s = Scanner(prog.c_str());
     Token t = s.next_token();
     while (t.type != TokenType::ERROR_EOF) {
-        std::cout << t;
+        std::cout << t << std::endl;
         if (t.is_error())
             break;
         tokens.push_back(t);
