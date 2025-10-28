@@ -1,3 +1,5 @@
+;; Original specification
+
 Arithmetic expressions a ::= x | n | a1 oa a2
 Boolean expressions b ::= true | false | not b1 | b1 ob b2 | a1 or a2
 Commands c ::= x := a | skip | c1; c2 | if b then c1 else c2 fi | while b do c1 od
@@ -12,12 +14,12 @@ relational operators, namely =, <, ≤, >, ≥.
 <relational> ::= = | < | <= | > | >=
 <operator> ::= + | - | *
 
-<conditional> ::=
+<cond> ::=
     true
   | false
-  | not [ b1 ]
-  | [ <conditional> ]
-  | <conditional> <logical> <conditional>
+  | not [ <cond> ]
+  | [ <cond> ]
+  | <cond> <logical> <cond>
   | <arith> <relational> <arith>
 
 <arith> ::=
@@ -30,8 +32,8 @@ relational operators, namely =, <, ≤, >, ≥.
     <ident> := <arith>
   | skip
   | <cmd> ; <cmd>
-  | if <conditional> then <cmd> else <cmd> fi
-  | while <conditional> do <cmd> od
+  | if <cond> then <cmd> else <cmd> fi
+  | while <cond> do <cmd> od
 
 <prog> ::= <cmd>
 
@@ -40,54 +42,55 @@ relational operators, namely =, <, ≤, >, ≥.
 <relational> ::= = | < | <= | > | >=
 <additive> ::= + | -
 
-<conditional> ::= <disjunction>
-<disjunction> ::= <conjunction> | <disjunction> or <conjunction>
-<conjunction> ::= <boolean> | <conjunction> and <boolean>
+<cond> ::= <or>
+<or> ::= <and> | <or> or <and>
+<and> ::= <bool> | <and> and <bool>
 
-<boolean> ::=
-    true | false
-  | not [ <conditional> ]
-  | [ <conditional> ]
+<bool> ::=
+    true
+  | false
+  | not [ <cond> ]
+  | [ <cond> ]
   | <arith> <relational> <arith>
 
 <arith> ::= <term> | <arith> <additive> <term>
 <term> ::= <factor> | <term> * <factor>
 <factor> ::= <ident> | <integer> | ( <arith> )
 
+<block> ::= <cmd> | <block> ; <cmd>
 <cmd> ::=
-      <ident> := <arith>
-    | skip
-    | <cmd> ; <cmd>
-    | if <conditional> then <cmd> else <cmd> fi
-    | while <conditional> do <cmd> od
+    <ident> := <arith>
+  | skip
+  | if <cond> then <cmd> else <cmd> fi
+  | while <cond> do <cmd> od
 
 <prog> ::= <cmd>
 
 ;; Non-left recursive grammar
 
-<op_logical> ::= and | or
 <relational> ::= = | < | <= | > | >=
 <additive> ::= + | -
 
-<conditional> ::= <disjunction>
+<cond> ::= <or>
 
-<disjunction> ::= <conjunction> <disjunction*>
-<disjunction*> ::= or <conjunction> <disjunction*> | \eps
+<or> ::= <and> <or*>
+<or*> ::= or <and> <or*> | ε
 
-<conjunction> ::= <boolean> <conjunction*>
-<conjunction*> ::= and <boolean> <conjunction*> | \eps
+<and> ::= <bool> <and*>
+<and*> ::= and <bool> <and*> | ε
 
-<boolean> ::=
-    true | false
-  | not [ <conditional> ]
-  | [ <conditional> ]
+<bool> ::=
+    true
+  | false
+  | not [ <cond> ]
+  | [ <cond> ]
   | <arith> <relational> <arith>
 
 <arith> ::= <term> <arith*>
-<arith*> ::= <additive> <term> <arith*> | \eps
+<arith*> ::= <additive> <term> <arith*> | ε
 
 <term> ::= <factor> <term*>
-<term*> ::= * <factor> <term*> | \eps
+<term*> ::= * <factor> <term*> | ε
 
 <factor> ::= <ident> | <integer> | ( <arith> )
 
@@ -96,7 +99,7 @@ relational operators, namely =, <, ≤, >, ≥.
 <cmd> ::=
       <ident> := <arith>
     | skip
-    | if <conditional> then <cmd> else <cmd> fi
-    | while <conditional> do <cmd> od
+    | if <cond> then <cmd> else <cmd> fi
+    | while <cond> do <cmd> od
 
 <prog> ::= <block>

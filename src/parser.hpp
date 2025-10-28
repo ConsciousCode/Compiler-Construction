@@ -12,6 +12,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 namespace parser {
 
@@ -29,7 +30,10 @@ struct Symbol {
     }
 
     inline bool operator<(const Symbol& other) const {
-        return less(*this, other);
+        if (kind != other.kind)
+            return kind < other.kind;
+        else
+            return id < other.id;
     }
 
     inline bool operator==(const Symbol& other) const {
@@ -120,50 +124,78 @@ struct Action {
 
 class ParserGenerator {
   public:
+    // Constructor: takes grammar productions and builds LR(1) parser tables
     ParserGenerator(std::initializer_list<Production> prods) : source_grammar(prods) {
         build_automaton();
         build_parse_tables();
     }
 
+    // Build the LR(1) automaton (states and transitions)
     void build_automaton();
+    
+    // Populate ACTION and GOTO tables from the automaton
     void build_parse_tables();
 
-    // table printing
+    // Debug utilities for printing parse tables
     void print_action_table() const;
     void print_goto_table() const;
 
+    // Retrieve a production rule by its index
     const Production& get_production(size_t idx) const;
 
     friend class Parser;
 
   private:
+    // Original grammar productions
     std::vector<Production> source_grammar;
+    
+    // LR(1) automaton: collection of states (sets of LR(1) items)
     std::vector<std::set<LR1Item, LR1ItemLess>> states;
 
+    // Transitions: maps (state, symbol) → next_state
     std::map<std::pair<size_t, Symbol>, size_t> transitions;
 
-    // B -> {rhs1, rhs2...}
+    // Grammar index: maps nonterminal → all its production RHS alternatives
+    // e.g., Block → {[Cmd], [Block, ;, Cmd]}
     std::unordered_map<whilelang::Nonterm, std::vector<std::vector<Symbol>>> by_lhs;
 
-    // First nonterminals
-    std::unordered_map<whilelang::Nonterm, std::set<Symbol, decltype(&Symbol::less)>> FIRST_NT{};
+    // FIRST sets: maps nonterminal → set of terminals that can start it
+    std::unordered_map<whilelang::Nonterm, std::set<Symbol>> FIRST_NT{};
 
-    // parse tables
-    std::map<std::pair<size_t, Symbol>, Action> action_table;
-    std::map<std::pair<size_t, Symbol>, size_t> goto_table;
+    // LR(1) parse tables
+    std::map<std::pair<size_t, Symbol>, Action> action_table;  // (state, terminal) → action
+    std::map<std::pair<size_t, Symbol>, size_t> goto_table;    // (state, nonterminal) → state
 
+    // Find the index of a production in source_grammar
     size_t production_index(whilelang::Nonterm lhs, std::vector<Symbol> const& rhs) const;
 
+    // Index grammar by LHS for faster lookup during closure computation
     void index_grammar();
+    
+    // Compute FIRST sets for all nonterminals
     void compute_first_sets();
+    
+    // Compute FIRST set for a sequence of symbols
     std::set<Symbol, decltype(&Symbol::less)> first_of_seq(std::vector<Symbol> const& seq) const;
+    
+    // Compute FIRST(gamma_tail · a) for lookahead calculation
     std::set<Symbol, decltype(&Symbol::less)> gamma_then_a(std::vector<Symbol> const& gamma_tail,
                                                            Symbol aSym) const;
+    
+    // Compute closure of a set of LR(1) items
     std::set<LR1Item, LR1ItemLess> closure(std::set<LR1Item, LR1ItemLess> I) const;
+    
+    // Compute GOTO(I, X): items reachable from I by shifting symbol X
     std::set<LR1Item, LR1ItemLess> goto_set(std::set<LR1Item, LR1ItemLess> const& I,
                                             Symbol X) const;
+    
+    // Generate initial LR(1) item set for start state
     std::set<LR1Item, LR1ItemLess> initial_items() const;
+    
+    // Get all symbols (terminals + nonterminals) in the grammar
     std::set<Symbol> all_symbols() const;
+    
+    // Find existing state with given items, or add as new state if not found
     size_t find_or_add_state(std::set<LR1Item, LR1ItemLess> const& items);
 };
 

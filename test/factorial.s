@@ -1,6 +1,6 @@
 .text
-.globl program
-program:
+.globl factorial
+factorial:
    ld t0, 8(a0)
    sd t0, 16(a0)
    li t0, 1

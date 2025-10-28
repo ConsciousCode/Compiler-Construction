@@ -16,10 +16,9 @@ void ParserGenerator::index_grammar() {
 
 // First over a single nonterminal
 void ParserGenerator::compute_first_sets() {
-    auto cmp = &Symbol::less;
 
     for (auto& kv : by_lhs) {
-        FIRST_NT.emplace(kv.first, std::set<Symbol, decltype(cmp)>(cmp));
+        FIRST_NT.try_emplace(kv.first);
     }
 
     bool changed = true;
