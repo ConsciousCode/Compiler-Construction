@@ -1,7 +1,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-extern void fibonacci(long *vars);
+#ifndef PROGRAM_NAME
+#define PROGRAM_NAME program 
+#endif
+
+extern void PROGRAM_NAME(long *vars);
 
 enum {A, B, N, OUTPUT, T, Z, VAR_COUNT };
 long vars[VAR_COUNT];
@@ -30,7 +34,7 @@ int main(int argc, char **argv) {
     vars[Z] = atol(argv[6]);
 
     print_state("Initial state:");
-    fibonacci(vars);
+    PROGRAM_NAME(vars);
     print_state("Final state:");
     return 0;
 }
