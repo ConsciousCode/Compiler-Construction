@@ -7,34 +7,40 @@
 
 extern void PROGRAM_NAME(long *vars);
 
-enum {A, B, N, OUTPUT, T, Z, VAR_COUNT };
-long vars[VAR_COUNT];
-
-static void print_state(const char* title) {
-    printf("%s\n", title);
-    printf("a=%ld\n", vars[A]);
-    printf("b=%ld\n", vars[B]);
-    printf("n=%ld\n", vars[N]);
-    printf("output=%ld\n", vars[OUTPUT]);
-    printf("t=%ld\n", vars[T]);
-    printf("x=%ld\n", vars[Z]);
-}
+#define MAX_VARS 16
 
 int main(int argc, char **argv) {
-    if (argc != VAR_COUNT + 1) {
-        fprintf(stderr, "Usage: %s a b n output t z\n    (pass initial values in ALPHABETICAL order)\n:", argv[0]);
+    long vars[MAX_VARS] = {0};
+
+    if (argc < 2) {
+        fprintf(stderr,
+            "Usage: %s <var1> <var2> ... <varN>\n"
+            "  Pass initial values in ALPHABETICAL order.\n"
+            "  Example:\n"
+            "    factorial: ./run 0 5 0 0   (output x y z)\n"
+            "    fibonacci: ./run 0 1 10 0 0 0   (a b n output t z)\n"
+            "    collatz:   ./run 10 0 0 0 0 0   (input n output quot rem steps)\n",
+            argv[0]);
         return 1;
     }
 
-    vars[A] = atol(argv[1]);
-    vars[B] = atol(argv[2]);
-    vars[N] = atol(argv[3]);
-    vars[OUTPUT] = atol(argv[4]);
-    vars[T] = atol(argv[5]);
-    vars[Z] = atol(argv[6]);
+    int var_count = argc -1;
 
-    print_state("Initial state:");
+    for (int i = 0; i < var_count; i++) {
+        vars[i] = atol(argv[i + 1]);
+    }
+
+    printf("Initial state:\n");
+    for (int i = 0; i < var_count; i++) {
+        printf("  var[%d] = %ld\n", i, vars[i]);
+    }
+
     PROGRAM_NAME(vars);
-    print_state("Final state:");
+
+    printf("\nFinal state:\n");
+    for (int i = 0; i < var_count; i++){
+        printf("  var[%d] = %ld\n", i, vars[i]);
+    }
+    
     return 0;
 }

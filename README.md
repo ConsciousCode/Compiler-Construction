@@ -4,17 +4,16 @@
 - Nicholas Livingstone
 - Robert McDaniels
 - Key Vollers
-### How to run scanner tests...
+### How to build the compiler
 ```bash
-cmake . -B build
-cd build
-cmake --build .
+cmake -S . -B build
+cmake --build build -j
 ```
-#### Run Scanner test 1:
+### Run Scanner test 1:
 ```bash
 ./test_scanner
 ```
-#### Run Scanner Test 2 (Google Test):
+### Run Scanner Test 2 (Google Test):
 ```bash
 ./scanner_test
 ```
@@ -22,10 +21,28 @@ or
 ```bash
 ctest --output-on-failure
 ```
-
-## Code Formatting
-
-Before committing, format your code:
+### How to Compile `.while` file
+- Build the Compiler
+- Run the following code inserting the `.while` file that you whish to compile
 ```bash
-cmake --build build --target format
+./build/wisc ./examples/fibonacci.while
+```
+### How to Run Code on RISC-V machine
+#### Fibonacci
+Output vars order, `a, b, n, output, t, z`
+```bash
+gcc fibonacci.s ./test/main.c -DPROGRAM_NAME=finonacci -o run_fib
+./run_fib 0 1 10 0 0 0
+```
+#### Factorial
+Output vars order, `output, x, y, z`
+```bash
+gcc factorial.s ./test/main.c -DPROGRAM_NAME=factorial -o run_fact
+./run_fact 0 5 0 0 
+```
+#### Collatz
+Output vars order, `a, b, n, output, t, z`
+```bash
+gcc collatz.s ./test/main.c -DPROGRAM_NAME=collatz -o run_clz
+./run_clz 10 0 0 0 0 0 
 ```
