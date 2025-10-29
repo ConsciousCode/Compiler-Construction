@@ -123,3 +123,17 @@ if(CLANG_FORMAT_EXECUTABLE)
         COMMENT "Running clang-format on source files"
     )
 endif()
+
+# Source Archive Target
+find_package(Git QUIET)
+
+if(GIT_FOUND)
+    add_custom_target(source-archive
+        COMMAND ${GIT_EXECUTABLE} archive --format=tar.gz 
+                --prefix=${PROJECT_NAME}-${PROJECT_VERSION}/ 
+                -o ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${PROJECT_VERSION}.tar.gz 
+                HEAD
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Creating source archive"
+    )
+endif()
