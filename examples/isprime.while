@@ -11,7 +11,7 @@ while i < n and not [composite] do
     while i*j < n do
         j += 1
     od;
-    if i*j == n then
+    if i*j = n then
         composite := 1
     else
         i := i + 1
