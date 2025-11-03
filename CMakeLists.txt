@@ -39,6 +39,8 @@ FetchContent_MakeAvailable(argparse)
 
 add_executable(wisc 
     src/main.cpp
+    
+    src/graphviz.cpp
 
     # Codegen
     src/codegen.cpp
