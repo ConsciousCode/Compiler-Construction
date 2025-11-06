@@ -32,16 +32,16 @@ int collect_label(const ast::Cond& cond) {
     return std::visit([](auto&& arg) {
         using T = std::decay_t<decltype(arg)>;
         if constexpr(std::is_same_v<T, std::shared_ptr<ast::Not>>) {
-            return arg->label;
+            return arg->get_label();
         }
         else if constexpr(std::is_same_v<T, std::shared_ptr<ast::Logical>>) {
-            return arg->label;
+            return arg->get_label();
         }
         else if constexpr(std::is_same_v<T, std::shared_ptr<ast::Comparison>>) {
-            return arg->label;
+            return arg->get_label();
         }
         else if constexpr(std::is_same_v<T, std::shared_ptr<ast::BoolConst>>) {
-            return arg->label;
+            return arg->get_label();
         }
         else {
             static_assert(false, "Unsupported condition");
@@ -146,7 +146,7 @@ std::string to_while(const ast::Block& block) {
             using T = std::decay_t<decltype(arg)>;
             if constexpr(std::is_same_v<T, ast::Assign>) {
                 code << arg.name << " := " << to_while(arg.value);
-                code << " {- " << arg.label << " -}\n";
+                code << " {- " << arg.get_label() << " -}";
             }
             else if constexpr(std::is_same_v<T, ast::If>) {
                 code << "if " << to_while(arg.cond) << " then";
@@ -154,17 +154,17 @@ std::string to_while(const ast::Block& block) {
                 code << indent(to_while(arg.then));
                 code << "\nelse\n";
                 code << indent(to_while(arg.el));
-                code << "fi";
+                code << "\nfi";
             }
             else if constexpr(std::is_same_v<T, ast::While>) {
-                code << "while " << to_while(arg.cond) << " do\n";
+                code << "while " << to_while(arg.cond) << " do";
                 code << " {- " << collect_label(arg.cond) << " -}\n";
                 code << indent(to_while(arg.body));
-                code << "od";
+                code << "\nod";
             }
             else if constexpr(std::is_same_v<T, ast::Skip>) {
                 code << "skip";
-                code << " {- " << arg.label << " -}";
+                code << " {- " << arg.get_label() << " -}";
             }
             else {
                 static_assert(false, "Unsupported command");
@@ -204,7 +204,7 @@ int main(int argc, char *argv[]) {
     
     parser::ParserGenerator pg = generate_while_parser();
     parser::Parser p(pg);
-    std::shared_ptr<parser::ParseTreeNode> parse_tree = p.parse(tokens);
+    std::shared_ptr<parser::ParseTreeNode> pt = p.parse(tokens);
     
-    std::cout << to_while(parse_tree->to_ast_block());
+    std::cout << to_while(*pt->to_ast().get_root());
 }

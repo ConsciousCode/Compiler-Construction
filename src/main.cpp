@@ -105,22 +105,22 @@ int main(int argc, char* argv[]) {
 
     parser::ParserGenerator pg = generate_while_parser();
     parser::Parser p(pg);
-    std::shared_ptr<parser::ParseTreeNode> parse_tree = p.parse(tokens);
+    std::shared_ptr<parser::ParseTreeNode> pt = p.parse(tokens);
     
     if(print_pt) {
         // TODO: Print to arbitrary output, not just stdout
-        parser::ParseTreeNode::print_tree(parse_tree);
+        parser::ParseTreeNode::print_tree(pt);
     }
     if(graph_pt) {
         // TODO: Print to stdout
-        parser::write_dot_file(parse_tree, outfn);
+        parser::write_dot_file(pt, outfn);
     }
     
     if(actions < 1 << AST) {
         return 0;
     }
 
-    ast::Block program = parse_tree->to_ast_block();
+    ast::Block& program = *pt->to_ast().get_root();
     
     if(print_ast) {
         // ???

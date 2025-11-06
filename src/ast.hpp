@@ -13,9 +13,15 @@ class ASTNode {
 
 class LabeledNode : public ASTNode {
   public:
-    size_t label;
-
     explicit LabeledNode(size_t l) : label(l){};
+    explicit LabeledNode() : label(-1){};
+
+    size_t get_label() const {
+        return label;
+    }
+  
+  private:
+    size_t label;
 };
 
 class Arith;
@@ -47,7 +53,7 @@ using Cond =
 class BoolConst : public LabeledNode {
   public:
     bool value;
-    BoolConst(bool v, size_t l) : value(v), LabeledNode(l) {};
+    BoolConst(bool v, size_t l) : LabeledNode(l), value(v) {};
     static Cond make(bool v, size_t label) {
         return Cond{std::make_shared<BoolConst>(v, label)};
     }
@@ -57,7 +63,7 @@ class Not : public LabeledNode{
   public:
     Cond cond;
 
-    Not(Cond c, size_t l) : cond(c), LabeledNode(l) {};
+    Not(Cond c, size_t l) : LabeledNode(l), cond(c) {};
 
     static Cond make(Cond c, size_t label) {
         return Cond{std::make_shared<Not>(std::move(c), label)};
@@ -72,7 +78,7 @@ class Logical : public LabeledNode {
     Cond left;
     Cond right;
 
-    Logical(Op operation, Cond l, Cond r, size_t label) : op(operation), left(l), right(r), LabeledNode(label) {};
+    Logical(Op operation, Cond l, Cond r, size_t label) : LabeledNode(label), op(operation), left(l), right(r) {};
 
     static Cond make(Op op, Cond l, Cond r, size_t label) {
         return Cond{std::make_shared<Logical>(op, std::move(l), std::move(r), label)};
@@ -87,9 +93,9 @@ class Comparison : public LabeledNode {
     Expr left;
     Expr right;
 
-    Comparison(Op operation, Expr l, Expr r, size_t label) : op(operation), left(l), right(r), LabeledNode(label) {};
+    Comparison(Op operation, Expr l, Expr r, size_t label = -1) : LabeledNode(label), op(operation), left(l), right(r) {};
 
-    static Cond make(Op op, Expr l, Expr r, size_t label) {
+    static Cond make(Op op, Expr l, Expr r, size_t label = -1) {
         return Cond{std::make_shared<Comparison>(op, std::move(l), std::move(r), label)};
     }
 };
@@ -99,16 +105,17 @@ class Assign : public LabeledNode {
     std::string name;
     Expr value;
 
-    Assign(std::string ident, Expr v, size_t l) : name(std::move(ident)), value(std::move(v)), LabeledNode(l) {}
-    Assign(std::string ident, int n, size_t l) : Assign(std::move(ident), Expr{n}, l) {}
-    Assign(std::string ident, const char* s, size_t l) : Assign(std::move(ident), Expr{std::string{s}}, l) {}
-    Assign(std::string ident, std::string s, size_t l) : Assign(std::move(ident), Expr{std::move(s)}, l) {}
+    Assign(std::string ident, Expr v, size_t l = -1) : LabeledNode(l), name(std::move(ident)), value(std::move(v)) {}
+    Assign(std::string ident, int n, size_t l = -1) : Assign(std::move(ident), Expr{n}, l) {}
+    Assign(std::string ident, const char* s, size_t l = -1) : Assign(std::move(ident), Expr{std::string{s}}, l) {}
+    Assign(std::string ident, std::string s, size_t l = -1) : Assign(std::move(ident), Expr{std::move(s)}, l) {}
 };
 
 class If;
 class While;
 class Skip : public LabeledNode {
   public:
+    Skip() = default;
     Skip(int l) : LabeledNode(l){};
 };
 using Cmd = std::variant<Assign, If, While, Skip>;
@@ -142,6 +149,28 @@ class While : public ASTNode {
     Block body;
 
     While(Cond c, Block b) : cond(std::move(c)), body(std::move(b)){};
+};
+
+/**
+ * Abstract Syntax Tree (AST) for the While language.
+ * 
+ */
+class AST {
+  public:
+    AST(std::shared_ptr<class Block> r, std::vector<ASTNode*> lbls) 
+        : root(std::move(r)), labels(std::move(lbls)) {};
+
+    const std::vector<ASTNode*>& get_labels() const {
+        return labels;
+    }
+
+    std::shared_ptr<class Block> get_root() const {
+        return root;
+    }
+
+  private:
+    std::shared_ptr<class Block> root;
+    std::vector<ASTNode*> labels;
 };
 
 } // namespace ast
