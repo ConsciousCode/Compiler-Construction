@@ -388,6 +388,13 @@ ast::Logical::Op ParseTreeNode::get_logical_op() {
     }
 }
 
+ast::AST ParseTreeNode::to_ast() {
+    std::vector<ast::ASTNode*> labels;
+    ast::Block root_block = this->to_ast_block(labels);
+    
+    return ast::AST{std::make_shared<ast::Block>(std::move(root_block)), std::move(labels)};
+}
+
 std::ostream& operator<<(std::ostream& os, const ParseTreeNode& node) {
     if (node.is_terminal) {
         os << "Terminal(" << node.terminal << ", \"" << node.token->lexeme << " ["
