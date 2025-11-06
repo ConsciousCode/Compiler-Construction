@@ -120,7 +120,9 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    ast::Block& program = *pt->to_ast().get_root();
+    ast::AST ast = pt->to_ast();
+    ast::Block& program = *ast.get_root();
+
     
     if(print_ast) {
         // ???
