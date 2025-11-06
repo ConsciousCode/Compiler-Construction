@@ -109,7 +109,6 @@ class If;
 class While;
 class Skip : public LabeledNode {
   public:
-    Skip() = default;
     Skip(int l) : LabeledNode(l){};
 };
 using Cmd = std::variant<Assign, If, While, Skip>;
@@ -144,7 +143,5 @@ class While : public ASTNode {
 
     While(Cond c, Block b) : cond(std::move(c)), body(std::move(b)){};
 };
-
-class Skip : public ASTNode {};
 
 } // namespace ast

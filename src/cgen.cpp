@@ -78,8 +78,8 @@ std::string to_c_inner(const ast::Cond& cond) {
     std::stringstream code;
     std::visit([&code](auto&& arg) {
         using T = std::decay_t<decltype(arg)>;
-        if constexpr(std::is_same_v<T, bool>) {
-            code << (arg? "true" : "false");
+        if constexpr(std::is_same_v<T, std::shared_ptr<ast::BoolConst>>) {
+            code << (arg->value? "true" : "false");
         }
         else if constexpr(std::is_same_v<T, std::shared_ptr<ast::Not>>) {
             code << "!(" << to_c_inner(arg->cond) << ")";

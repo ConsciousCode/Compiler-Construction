@@ -108,6 +108,19 @@ add_executable(
     src/token.cpp
 )
 
+add_executable(
+    whilegen
+    src/whilegen.cpp
+
+    # Parser + scanner
+    src/parser.cpp
+    src/parser_generator.cpp
+    src/dotgenerator.cpp
+    src/while_parser.cpp
+    src/scanner.cpp
+    src/token.cpp
+)
+
 target_compile_definitions(scanner_test PRIVATE
     EXAMPLES_DIR="${CMAKE_SOURCE_DIR}/examples"
 )

@@ -2,6 +2,7 @@
 #include "emitter.hpp"
 #include "collect_vars.hpp"
 
+#include <memory>
 #include <set>
 #include <functional>
 
@@ -54,8 +55,8 @@ CodegenOutput Codegen::generate(const Block& program, std::string program_name) 
     std::function<void(const Cond&, const std::string&, const std::string&)> emit_cond = [&](const Cond& c, const std::string& Ltrue, const std::string& Lfalse) {
         std::visit([&](const auto& node) {
             using T = std::decay_t<decltype(node)>;
-            if constexpr (std::is_same_v<T, bool>) {
-                as.line(std::string("j ") + (node ? Ltrue : Lfalse), true);
+            if constexpr (std::is_same_v<T, std::shared_ptr<BoolConst>>) {
+                as.line(std::string("j ") + (node->value ? Ltrue : Lfalse), true);
             } else if constexpr (std::is_same_v<T, std::shared_ptr<Not>>) {
                 emit_cond(node->cond, Lfalse, Ltrue);
             } else if constexpr (std::is_same_v<T, std::shared_ptr<Logical>>) {
