@@ -13,9 +13,14 @@ class ASTNode {
 
 class LabeledNode : public ASTNode {
   public:
-    size_t label;
-
     explicit LabeledNode(size_t l) : label(l){};
+
+    size_t get_label() const {
+        return label;
+    }
+  
+  private:
+    size_t label;
 };
 
 class Arith;
