@@ -45,7 +45,7 @@ int main(int argc, char* argv[]) {
         parser::write_dot_file(parse_tree, "parse_tree.dot");
     }
 
-    ast::AST program = parse_tree->to_ast();
-    graphviz::print_viz_block(*program.get_root());
+    ast::AST ast = parse_tree->to_ast();
+    graphviz::print_viz_block(*ast.get_root());
     return 0;
 }

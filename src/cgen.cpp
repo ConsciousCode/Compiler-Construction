@@ -221,7 +221,7 @@ int main(int argc, char *argv[]) {
     parser::Parser p(pg);
     std::shared_ptr<parser::ParseTreeNode> parse_tree = p.parse(tokens);
     
-    ast::Block program = parse_tree->to_ast_block();
+    ast::AST ast = parse_tree->to_ast();
     
-    std::cout << to_c(program_name, program);
+    std::cout << to_c(program_name, *ast.get_root());
 }
