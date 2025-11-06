@@ -21,7 +21,7 @@ strict graph {
     N_0 -- N_a
     N_a[label="while"]
     N_a -- N_b
-    N_b[label="not\n3"]
+    N_b[label="not\n4"]
     N_b -- N_c
     N_c[label="=\n3"]
     N_c -- N_d
