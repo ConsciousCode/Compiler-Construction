@@ -2,22 +2,22 @@
  * Generate While code from the AST.
  */
 
-#include <iostream>
-#include <fstream>
-#include <filesystem>
-#include <memory>
-#include <variant>
-
 #include "ast.hpp"
 #include "scanner.hpp"
 #include "while_parser.hpp"
+
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <memory>
+#include <variant>
 
 /**
  * https://stackoverflow.com/questions/2896600/#answer-24315631
  */
 std::string ReplaceAll(std::string str, const std::string& from, const std::string& to) {
     size_t start_pos = 0;
-    while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+    while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
         str.replace(start_pos, from.length(), to);
         start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
     }
@@ -29,25 +29,23 @@ std::string indent(std::string str) {
 }
 
 int collect_label(const ast::Cond& cond) {
-    return std::visit([](auto&& arg) {
-        using T = std::decay_t<decltype(arg)>;
-        if constexpr(std::is_same_v<T, std::shared_ptr<ast::Not>>) {
-            return arg->get_label();
-        }
-        else if constexpr(std::is_same_v<T, std::shared_ptr<ast::Logical>>) {
-            return arg->get_label();
-        }
-        else if constexpr(std::is_same_v<T, std::shared_ptr<ast::Comparison>>) {
-            return arg->get_label();
-        }
-        else if constexpr(std::is_same_v<T, std::shared_ptr<ast::BoolConst>>) {
-            return arg->get_label();
-        }
-        else {
-            std::cerr << "Error: Unsupported condition encountered" << std::endl;
-            std::abort();
-        }
-    }, cond);
+    return std::visit(
+        [](auto&& arg) {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr (std::is_same_v<T, std::shared_ptr<ast::Not>>) {
+                return arg->get_label();
+            } else if constexpr (std::is_same_v<T, std::shared_ptr<ast::Logical>>) {
+                return arg->get_label();
+            } else if constexpr (std::is_same_v<T, std::shared_ptr<ast::Comparison>>) {
+                return arg->get_label();
+            } else if constexpr (std::is_same_v<T, std::shared_ptr<ast::BoolConst>>) {
+                return arg->get_label();
+            } else {
+                std::cerr << "Error: Unsupported condition encountered" << std::endl;
+                std::abort();
+            }
+        },
+        cond);
 }
 
 std::string to_while(const ast::Arith& arith);
@@ -57,28 +55,34 @@ std::string to_while(const ast::Block& block);
 
 std::string to_while(const ast::Expr& expr) {
     std::stringstream code;
-    std::visit([&code](const auto& arg) {
-        using T = std::decay_t<decltype(arg)>;
-        if constexpr(std::is_same_v<T, int>) {
-            code << arg;
-        }
-        else if constexpr(std::is_same_v<T, std::string>) {
-            code << arg;
-        }
-        else if constexpr(std::is_same_v<T, std::shared_ptr<ast::Arith>>) {
-            code << to_while(*arg);
-        }
-    }, expr);
+    std::visit(
+        [&code](const auto& arg) {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr (std::is_same_v<T, int>) {
+                code << arg;
+            } else if constexpr (std::is_same_v<T, std::string>) {
+                code << arg;
+            } else if constexpr (std::is_same_v<T, std::shared_ptr<ast::Arith>>) {
+                code << to_while(*arg);
+            }
+        },
+        expr);
     return code.str();
 }
 
 std::string to_while(const ast::Arith& arith) {
     std::stringstream code;
     code << "(" << to_while(arith.left) << " ";
-    switch(arith.op) {
-        case ast::Arith::Op::ADD: code << "+"; break;
-        case ast::Arith::Op::SUB: code << "-"; break;
-        case ast::Arith::Op::MUL: code << "*"; break;
+    switch (arith.op) {
+    case ast::Arith::Op::ADD:
+        code << "+";
+        break;
+    case ast::Arith::Op::SUB:
+        code << "-";
+        break;
+    case ast::Arith::Op::MUL:
+        code << "*";
+        break;
     }
     code << " " << to_while(arith.right) << ")";
     return code.str();
@@ -92,29 +96,27 @@ std::string to_while(const ast::Assign& assign) {
 
 std::string to_while(const ast::Cond& cond) {
     std::stringstream code;
-    std::visit([&code](auto&& arg) {
-        using T = std::decay_t<decltype(arg)>;
-        if constexpr(std::is_same_v<T, std::shared_ptr<ast::BoolConst>>) {
-            code << (arg->value? "true" : "false");
-        }
-        else if constexpr(std::is_same_v<T, std::shared_ptr<ast::Not>>) {
-            code << "not [" << to_while(arg->cond) << "]";
-        }
-        else if constexpr(std::is_same_v<T, std::shared_ptr<ast::Logical>>) {
-            code << "[" << to_while(arg->left) << " ";
-            switch(arg->op) {
+    std::visit(
+        [&code](auto&& arg) {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr (std::is_same_v<T, std::shared_ptr<ast::BoolConst>>) {
+                code << (arg->value ? "true" : "false");
+            } else if constexpr (std::is_same_v<T, std::shared_ptr<ast::Not>>) {
+                code << "not [" << to_while(arg->cond) << "]";
+            } else if constexpr (std::is_same_v<T, std::shared_ptr<ast::Logical>>) {
+                code << "[" << to_while(arg->left) << " ";
+                switch (arg->op) {
                 case ast::Logical::Op::AND:
                     code << "and ";
                     break;
                 case ast::Logical::Op::OR:
                     code << "or ";
                     break;
-            }
-            code << to_while(arg->right) << "]";
-        }
-        else if constexpr(std::is_same_v<T, std::shared_ptr<ast::Comparison>>) {
-            code << "[" << to_while(arg->left) << " ";
-            switch(arg->op) {
+                }
+                code << to_while(arg->right) << "]";
+            } else if constexpr (std::is_same_v<T, std::shared_ptr<ast::Comparison>>) {
+                code << "[" << to_while(arg->left) << " ";
+                switch (arg->op) {
                 case ast::Comparison::Op::EQ:
                     code << "= ";
                     break;
@@ -130,53 +132,53 @@ std::string to_while(const ast::Cond& cond) {
                 case ast::Comparison::Op::GE:
                     code << ">= ";
                     break;
+                }
+                code << to_while(arg->right) << "]";
             }
-            code << to_while(arg->right) << "]";
-        }
-    }, cond);
+        },
+        cond);
     return code.str();
 }
 
 std::string to_while(const ast::Block& block) {
     bool first = true;
     std::stringstream code;
-    for(auto cmd : block.cmds) {
-        if(!first) code << "\n";
+    for (auto cmd : block.cmds) {
+        if (!first)
+            code << "\n";
         first = false;
-        std::visit([&code](const auto& arg) {
-            using T = std::decay_t<decltype(arg)>;
-            if constexpr(std::is_same_v<T, ast::Assign>) {
-                code << arg.name << " := " << to_while(arg.value);
-                code << " {- " << arg.get_label() << " -}";
-            }
-            else if constexpr(std::is_same_v<T, ast::If>) {
-                code << "if " << to_while(arg.cond) << " then";
-                code << " {- " << collect_label(arg.cond) << " -}\n";
-                code << indent(to_while(arg.then));
-                code << "\nelse\n";
-                code << indent(to_while(arg.el));
-                code << "\nfi";
-            }
-            else if constexpr(std::is_same_v<T, ast::While>) {
-                code << "while " << to_while(arg.cond) << " do";
-                code << " {- " << collect_label(arg.cond) << " -}\n";
-                code << indent(to_while(arg.body));
-                code << "\nod";
-            }
-            else if constexpr(std::is_same_v<T, ast::Skip>) {
-                code << "skip";
-                code << " {- " << arg.get_label() << " -}";
-            }
-            else {
-                std::cerr << "Error: Unsupported command encountered" << std::endl;
-                std::abort();
-            }
-        }, cmd);
+        std::visit(
+            [&code](const auto& arg) {
+                using T = std::decay_t<decltype(arg)>;
+                if constexpr (std::is_same_v<T, ast::Assign>) {
+                    code << arg.name << " := " << to_while(arg.value);
+                    code << " {- " << arg.get_label() << " -}";
+                } else if constexpr (std::is_same_v<T, ast::If>) {
+                    code << "if " << to_while(arg.cond) << " then";
+                    code << " {- " << collect_label(arg.cond) << " -}\n";
+                    code << indent(to_while(arg.then));
+                    code << "\nelse\n";
+                    code << indent(to_while(arg.el));
+                    code << "\nfi";
+                } else if constexpr (std::is_same_v<T, ast::While>) {
+                    code << "while " << to_while(arg.cond) << " do";
+                    code << " {- " << collect_label(arg.cond) << " -}\n";
+                    code << indent(to_while(arg.body));
+                    code << "\nod";
+                } else if constexpr (std::is_same_v<T, ast::Skip>) {
+                    code << "skip";
+                    code << " {- " << arg.get_label() << " -}";
+                } else {
+                    std::cerr << "Error: Unsupported command encountered" << std::endl;
+                    std::abort();
+                }
+            },
+            cmd);
     }
     return code.str();
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
     if (argc < 2) {
         std::cerr << "Usage: " << argv[0] << " <input_file>" << std::endl;
         return 1;
@@ -203,10 +205,10 @@ int main(int argc, char *argv[]) {
         tokens.push_back(t);
         t = s.next_token();
     }
-    
+
     parser::ParserGenerator pg = generate_while_parser();
     parser::Parser p(pg);
     std::shared_ptr<parser::ParseTreeNode> pt = p.parse(tokens);
-    
+
     std::cout << to_while(*pt->to_ast().get_root());
 }

@@ -45,9 +45,9 @@ std::shared_ptr<ParseTreeNode> Parser::parse(std::vector<Token> const& tokens) {
         auto action_it = pg.action_table.find(key);
 
         if (action_it == pg.action_table.end()) {
-           
+
             std::cerr << "Parse error at " << tokens[pos].loc.line << ":" << tokens[pos].loc.col
-                      << " unexpected token " << tokens[pos].type << std::endl; 
+                      << " unexpected token " << tokens[pos].type << std::endl;
             return nullptr;
         }
 
@@ -154,9 +154,10 @@ ast::Block ParseTreeNode::to_ast_block(std::vector<ast::ASTNode*>& labels) {
 
 ast::Cmd ParseTreeNode::to_ast_cmd(std::vector<ast::ASTNode*>& labels) {
     switch (this->cmd_type()) {
-    case TokenType::OP_ASSIGN:{
+    case TokenType::OP_ASSIGN: {
         size_t label = labels.size();
-        auto node = std::make_shared<ast::Assign>(children[0]->token->lexeme, children[2]->to_ast_expr(), label);
+        auto node = std::make_shared<ast::Assign>(children[0]->token->lexeme,
+                                                  children[2]->to_ast_expr(), label);
         labels.push_back(node.get());
         return ast::Cmd{*node};
     }
@@ -168,7 +169,7 @@ ast::Cmd ParseTreeNode::to_ast_cmd(std::vector<ast::ASTNode*>& labels) {
     case TokenType::KW_WHILE:
         return ast::While{children[1]->to_ast_cond(labels), children[3]->to_ast_block(labels)};
 
-    case TokenType::KW_SKIP:{
+    case TokenType::KW_SKIP: {
         size_t label = labels.size();
         auto node = std::make_shared<ast::Skip>(label);
         labels.push_back(node.get());
@@ -242,11 +243,9 @@ ast::Cond ParseTreeNode::to_ast_cond(std::vector<ast::ASTNode*>& labels) {
         bool value;
         if (terminal == TokenType::KW_TRUE) {
             value = true;
-        }
-        else if (terminal == TokenType::KW_FALSE) {
+        } else if (terminal == TokenType::KW_FALSE) {
             value = false;
-        }
-        else {
+        } else {
             std::cerr << "Parse error in condition: unexpected terminal" << std::endl;
             std::abort();
         }
@@ -270,11 +269,12 @@ ast::Cond ParseTreeNode::to_ast_cond(std::vector<ast::ASTNode*>& labels) {
             // Disjunction -> Disjunction OR Conjunction
             auto left = children[0]->to_ast_cond(labels);
             auto right = children[2]->to_ast_cond(labels);
-            
+
             size_t label = labels.size();
-            auto node = std::make_shared<ast::Logical>(ast::Logical::Op::OR, std::move(left), std::move(right), label);
-            labels.push_back(node.get());  // Push the raw pointer
-            return ast::Cond{node};  // Wrap in variant
+            auto node = std::make_shared<ast::Logical>(ast::Logical::Op::OR, std::move(left),
+                                                       std::move(right), label);
+            labels.push_back(node.get()); // Push the raw pointer
+            return ast::Cond{node};       // Wrap in variant
         }
 
     case wnt::Conjunction:
@@ -287,7 +287,8 @@ ast::Cond ParseTreeNode::to_ast_cond(std::vector<ast::ASTNode*>& labels) {
             auto right = children[2]->to_ast_cond(labels);
 
             size_t label = labels.size();
-            auto node = std::make_shared<ast::Logical>(ast::Logical::Op::AND, std::move(left), std::move(right), label);
+            auto node = std::make_shared<ast::Logical>(ast::Logical::Op::AND, std::move(left),
+                                                       std::move(right), label);
             labels.push_back(node.get());
             return ast::Cond{node};
         }
@@ -303,7 +304,8 @@ ast::Cond ParseTreeNode::to_ast_cond(std::vector<ast::ASTNode*>& labels) {
             auto right = children[2]->to_ast_expr();
 
             size_t label = labels.size();
-            auto node = std::make_shared<ast::Comparison>(op, std::move(left), std::move(right), label);
+            auto node =
+                std::make_shared<ast::Comparison>(op, std::move(left), std::move(right), label);
             labels.push_back(node.get());
             return ast::Cond{node};
         } else if (children.size() == 3) {
@@ -391,7 +393,7 @@ ast::Logical::Op ParseTreeNode::get_logical_op() {
 ast::AST ParseTreeNode::to_ast() {
     std::vector<ast::ASTNode*> labels;
     ast::Block root_block = this->to_ast_block(labels);
-    
+
     return ast::AST{std::make_shared<ast::Block>(std::move(root_block)), std::move(labels)};
 }
 

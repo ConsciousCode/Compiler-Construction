@@ -1,13 +1,13 @@
-#include <iostream>
-#include <filesystem>
-#include <fstream>
-
 #include "graphviz.hpp"
 
-#include "token.hpp"
-#include "scanner.hpp"
 #include "parser.hpp"
+#include "scanner.hpp"
+#include "token.hpp"
 #include "while_parser.hpp"
+
+#include <filesystem>
+#include <fstream>
+#include <iostream>
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
@@ -36,10 +36,10 @@ int main(int argc, char* argv[]) {
         tokens.push_back(t);
         t = s.next_token();
     }
-    
+
     parser::ParserGenerator pg = generate_while_parser();
     parser::Parser p(pg);
     std::shared_ptr<parser::ParseTreeNode> pt = p.parse(tokens);
-    
+
     graphviz::print_viz_block(*pt->to_ast().get_root());
 }

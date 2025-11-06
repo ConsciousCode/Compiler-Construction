@@ -166,7 +166,10 @@ size_t viz_cond(const Cond& c, std::ostream& os, size_t nid) {
         [&](const auto& node) {
             using T = std::decay_t<decltype(node)>;
             if constexpr (std::is_same_v<T, std::shared_ptr<BoolConst>>) {
-                os << ind << L{nid, std::string(node->value ? "true" : "false") + "\\n" + std::to_string(node->get_label())} << "\n";
+                os << ind
+                   << L{nid, std::string(node->value ? "true" : "false") + "\\n" +
+                                 std::to_string(node->get_label())}
+                   << "\n";
                 return nid;
             } else if constexpr (std::is_same_v<T, std::shared_ptr<Not>>) {
                 return viz_not(*node, os, nid);
@@ -236,7 +239,8 @@ size_t viz_cmd(const Cmd& c, std::ostream& os, size_t nid) {
                 return viz_while(node, os, nid);
             } else {
                 static_assert(std::is_same_v<T, Skip>);
-                os << ind << L{nid, std::string("skip\\n") + std::to_string(node.get_label())} << "\n";
+                os << ind << L{nid, std::string("skip\\n") + std::to_string(node.get_label())}
+                   << "\n";
                 return nid;
             }
         },
