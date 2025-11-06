@@ -96,6 +96,7 @@ size_t viz_cond(const Cond& c, std::ostream& os, size_t nid);
 size_t viz_arith(const Arith& a, std::ostream& os, size_t nid);
 size_t viz_block(const Block& b, std::ostream& os, size_t nid);
 size_t viz_cmd(const Cmd& c, std::ostream& os, size_t nid);
+static size_t viz_not(const Not& n, std::ostream& os, size_t nid);
 
 size_t viz_arith(const Arith& a, std::ostream& os, size_t nid) {
     size_t root = nid;
@@ -171,6 +172,9 @@ size_t viz_cond(const Cond& c, std::ostream& os, size_t nid) {
                 return viz_not(*node, os, nid);
             } else if constexpr (std::is_same_v<T, std::shared_ptr<Logical>>) {
                 return viz_logical(*node, os, nid);
+            } else if constexpr (std::is_same_v<T, std::shared_ptr<BoolConst>>) {
+                os << ind << L{nid, node->value ? "true" : "false"} << "\n";
+                return nid;
             } else {
                 return viz_cmp(*node, os, nid);
             }
