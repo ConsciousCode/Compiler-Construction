@@ -52,7 +52,7 @@ using Cond =
 class BoolConst : public LabeledNode {
   public:
     bool value;
-    BoolConst(bool v, size_t l) : value(v), LabeledNode(l) {};
+    BoolConst(bool v, size_t l) : LabeledNode(l), value(v) {};
     static Cond make(bool v, size_t label) {
         return Cond{std::make_shared<BoolConst>(v, label)};
     }
@@ -62,7 +62,7 @@ class Not : public LabeledNode{
   public:
     Cond cond;
 
-    Not(Cond c, size_t l) : cond(c), LabeledNode(l) {};
+    Not(Cond c, size_t l) : LabeledNode(l), cond(c) {};
 
     static Cond make(Cond c, size_t label) {
         return Cond{std::make_shared<Not>(std::move(c), label)};
@@ -77,7 +77,7 @@ class Logical : public LabeledNode {
     Cond left;
     Cond right;
 
-    Logical(Op operation, Cond l, Cond r, size_t label) : op(operation), left(l), right(r), LabeledNode(label) {};
+    Logical(Op operation, Cond l, Cond r, size_t label) : LabeledNode(label), op(operation), left(l), right(r) {};
 
     static Cond make(Op op, Cond l, Cond r, size_t label) {
         return Cond{std::make_shared<Logical>(op, std::move(l), std::move(r), label)};
@@ -92,7 +92,7 @@ class Comparison : public LabeledNode {
     Expr left;
     Expr right;
 
-    Comparison(Op operation, Expr l, Expr r, size_t label) : op(operation), left(l), right(r), LabeledNode(label) {};
+    Comparison(Op operation, Expr l, Expr r, size_t label) : LabeledNode(label), op(operation), left(l), right(r) {};
 
     static Cond make(Op op, Expr l, Expr r, size_t label) {
         return Cond{std::make_shared<Comparison>(op, std::move(l), std::move(r), label)};
@@ -104,7 +104,7 @@ class Assign : public LabeledNode {
     std::string name;
     Expr value;
 
-    Assign(std::string ident, Expr v, size_t l) : name(std::move(ident)), value(std::move(v)), LabeledNode(l) {}
+    Assign(std::string ident, Expr v, size_t l) : LabeledNode(l), name(std::move(ident)), value(std::move(v)) {}
     Assign(std::string ident, int n, size_t l) : Assign(std::move(ident), Expr{n}, l) {}
     Assign(std::string ident, const char* s, size_t l) : Assign(std::move(ident), Expr{std::string{s}}, l) {}
     Assign(std::string ident, std::string s, size_t l) : Assign(std::move(ident), Expr{std::move(s)}, l) {}
