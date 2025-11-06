@@ -8,13 +8,13 @@ using namespace ast;
 Block make_example_ast_factorial() {
 
     Block program{
-        Assign{"y", "x"},
-        Assign{"z", 1},
-        While{Comparison::make(Comparison::Op::GT, std::string{"y"}, 1),
-              Block{Assign{"z", Arith::make(Arith::Op::MUL, "z", "y")},
-                    Assign{"y", Arith::make(Arith::Op::SUB, "y", 1)}}},
-        Assign{"y", 0},
-        Assign{"output", "z"},
+        Assign{"y", "x", 0},
+        Assign{"z", 1, 0},
+        While{Comparison::make(Comparison::Op::GT, std::string{"y"}, 1, 0),
+              Block{Assign{"z", Arith::make(Arith::Op::MUL, "z", "y"), 0},
+                    Assign{"y", Arith::make(Arith::Op::SUB, "y", 1), 0}}},
+        Assign{"y", 0, 0},
+        Assign{"output", "z", 0},
     };
 
     return program;
