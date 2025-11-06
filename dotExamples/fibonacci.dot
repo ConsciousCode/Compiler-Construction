@@ -1,0 +1,77 @@
+strict graph {
+    N_0[label="block"]
+    N_0 -- N_1
+    N_1[label=":=\n0"]
+    N_1 -- N_2
+    N_2[label="a"]
+    N_1 -- N_3
+    N_3[label="0"]
+    N_0 -- N_4
+    N_4[label=":=\n1"]
+    N_4 -- N_5
+    N_5[label="b"]
+    N_4 -- N_6
+    N_6[label="1"]
+    N_0 -- N_7
+    N_7[label=":=\n2"]
+    N_7 -- N_8
+    N_8[label="z"]
+    N_7 -- N_9
+    N_9[label="0"]
+    N_0 -- N_a
+    N_a[label="while"]
+    N_a -- N_b
+    N_b[label="not\n3"]
+    N_b -- N_c
+    N_c[label="=\n3"]
+    N_c -- N_d
+    N_d[label="n"]
+    N_c -- N_e
+    N_e[label="z"]
+    N_a -- N_f
+    N_f[label="block"]
+    N_f -- N_10
+    N_10[label=":=\n5"]
+    N_10 -- N_11
+    N_11[label="t"]
+    N_10 -- N_12
+    N_12[label="+"]
+    N_12 -- N_13
+    N_13[label="a"]
+    N_12 -- N_14
+    N_14[label="b"]
+    N_f -- N_15
+    N_15[label=":=\n6"]
+    N_15 -- N_16
+    N_16[label="a"]
+    N_15 -- N_17
+    N_17[label="b"]
+    N_f -- N_18
+    N_18[label=":=\n7"]
+    N_18 -- N_19
+    N_19[label="b"]
+    N_18 -- N_1a
+    N_1a[label="t"]
+    N_f -- N_1b
+    N_1b[label=":=\n8"]
+    N_1b -- N_1c
+    N_1c[label="n"]
+    N_1b -- N_1d
+    N_1d[label="-"]
+    N_1d -- N_1e
+    N_1e[label="n"]
+    N_1d -- N_1f
+    N_1f[label="1"]
+    N_f -- N_20
+    N_20[label=":=\n9"]
+    N_20 -- N_21
+    N_21[label="z"]
+    N_20 -- N_22
+    N_22[label="0"]
+    N_0 -- N_23
+    N_23[label=":=\n10"]
+    N_23 -- N_24
+    N_24[label="output"]
+    N_23 -- N_25
+    N_25[label="a"]
+}

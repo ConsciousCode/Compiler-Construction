@@ -1,0 +1,57 @@
+strict graph {
+    N_0[label="block"]
+    N_0 -- N_1
+    N_1[label=":=\n0"]
+    N_1 -- N_2
+    N_2[label="y"]
+    N_1 -- N_3
+    N_3[label="x"]
+    N_0 -- N_4
+    N_4[label=":=\n1"]
+    N_4 -- N_5
+    N_5[label="z"]
+    N_4 -- N_6
+    N_6[label="1"]
+    N_0 -- N_7
+    N_7[label="while"]
+    N_7 -- N_8
+    N_8[label=">\n2"]
+    N_8 -- N_9
+    N_9[label="y"]
+    N_8 -- N_a
+    N_a[label="1"]
+    N_7 -- N_b
+    N_b[label="block"]
+    N_b -- N_c
+    N_c[label=":=\n3"]
+    N_c -- N_d
+    N_d[label="z"]
+    N_c -- N_e
+    N_e[label="*"]
+    N_e -- N_f
+    N_f[label="z"]
+    N_e -- N_10
+    N_10[label="y"]
+    N_b -- N_11
+    N_11[label=":=\n4"]
+    N_11 -- N_12
+    N_12[label="y"]
+    N_11 -- N_13
+    N_13[label="-"]
+    N_13 -- N_14
+    N_14[label="y"]
+    N_13 -- N_15
+    N_15[label="1"]
+    N_0 -- N_16
+    N_16[label=":=\n5"]
+    N_16 -- N_17
+    N_17[label="y"]
+    N_16 -- N_18
+    N_18[label="0"]
+    N_0 -- N_19
+    N_19[label=":=\n6"]
+    N_19 -- N_1a
+    N_1a[label="output"]
+    N_19 -- N_1b
+    N_1b[label="z"]
+}
