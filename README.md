@@ -88,6 +88,55 @@ Parses a `.while` program and outputs:
 ```bash
 parser_example <input_file>
 ```
+### Equivalent C program
+Parses a `.while` program and outputs an equivalent C program. This is intended to help verify the correctness of codegen from the backend.
+```bash
+cgen <input_file>
+```
+
+Example input:
+```
+while n > 0 do
+  output := output + 1;
+  n := n - 1
+od
+```
+
+Example output:
+```c
+#include <stdint.h>
+void loop(int64_t vars[]) {
+    int64_t n = vars[0], output = vars[1];
+    while ((n > 0)) {
+        output = (output + 1);
+        n = (n - 1);
+    }
+    vars[0] = n;
+    vars[1] = output;
+}
+```
+
+### While program annotation
+Parses a `.while` program and outputs an equivalent program with nodes annotated with labels. This serves as a debugging aid to verify the AST and identify which nodes are being labeled. Specifically, `:=`, `skip`, and the root condition nodes of `if` and `while` commands.
+```bash
+whilegen <input_file>
+```
+
+Example input:
+```
+while n > 0 do
+  output := output + 1;
+  n := n - 1
+od
+```
+
+Example output:
+```
+while [n > 0] do {- 0 -}
+    output := (output + 1) {- 1 -}
+    n := (n - 1) {- 2 -}
+od
+```
 
 ## Project Structure
 
