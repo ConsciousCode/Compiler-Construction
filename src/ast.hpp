@@ -150,6 +150,26 @@ class While : public ASTNode {
     While(Cond c, Block b) : cond(std::move(c)), body(std::move(b)){};
 };
 
-class Skip : public ASTNode {};
+/**
+ * Abstract Syntax Tree (AST) for the While language.
+ * 
+ */
+class AST {
+  public:
+    AST(std::shared_ptr<class Block> r, std::vector<ASTNode*> lbls) 
+        : root(std::move(r)), labels(std::move(lbls)) {};
+
+    const std::vector<ASTNode*>& get_labels() const {
+        return labels;
+    }
+
+    std::shared_ptr<class Block> get_root() const {
+        return root;
+    }
+
+  private:
+    std::shared_ptr<class Block> root;
+    std::vector<ASTNode*> labels;
+};
 
 } // namespace ast
