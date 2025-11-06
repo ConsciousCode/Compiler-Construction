@@ -117,14 +117,14 @@ void ParseTreeNode::print_tree(std::shared_ptr<ParseTreeNode> node, int indent) 
     }
 }
 
-ast::Block ParseTreeNode::to_ast_block() {
+ast::Block ParseTreeNode::to_ast_block(std::vector<ast::ASTNode*>& labels) {
     using wnt = whilelang::Nonterm;
     ast::Block blk;
 
     if (children.size() == 1) {
         // Block -> Cmd (base case)
         if (children[0]->nonterminal == wnt::Cmd) {
-            blk.cmds.push_back(children[0]->to_ast_cmd());
+            blk.cmds.push_back(children[0]->to_ast_cmd(labels));
         } else {
             std::cerr << "Parse Error: Expected Cmd in Block" << std::endl;
             std::abort();
@@ -135,11 +135,11 @@ ast::Block ParseTreeNode::to_ast_block() {
             children[2]->nonterminal == wnt::Cmd) {
 
             // Recursively get commands from the first block
-            ast::Block rest_block = children[0]->to_ast_block();
+            ast::Block rest_block = children[0]->to_ast_block(labels);
             blk.cmds.insert(blk.cmds.end(), rest_block.cmds.begin(), rest_block.cmds.end());
 
             // Add the current command
-            blk.cmds.push_back(children[2]->to_ast_cmd());
+            blk.cmds.push_back(children[2]->to_ast_cmd(labels));
         } else {
             std::cerr << "Parse Error: Malformed Block" << std::endl;
             std::abort();
@@ -152,21 +152,28 @@ ast::Block ParseTreeNode::to_ast_block() {
     return blk;
 }
 
-ast::Cmd ParseTreeNode::to_ast_cmd() {
+ast::Cmd ParseTreeNode::to_ast_cmd(std::vector<ast::ASTNode*>& labels) {
     switch (this->cmd_type()) {
-    case TokenType::OP_ASSIGN:
-        return ast::Assign{children[0]->token->lexeme, children[2]->to_ast_expr()};
+    case TokenType::OP_ASSIGN:{
+        size_t label = labels.size();
+        auto node = std::make_shared<ast::Assign>(children[0]->token->lexeme, children[2]->to_ast_expr(), label);
+        labels.push_back(node.get());
+        return ast::Cmd{*node};
+    }
 
     case TokenType::KW_IF:
-        return ast::If{children[1]->to_ast_cond(), children[3]->to_ast_block(),
-                       children[5]->to_ast_block()};
+        return ast::If{children[1]->to_ast_cond(labels), children[3]->to_ast_block(labels),
+                       children[5]->to_ast_block(labels)};
 
     case TokenType::KW_WHILE:
-        return ast::While{children[1]->to_ast_cond(), children[3]->to_ast_block()};
+        return ast::While{children[1]->to_ast_cond(labels), children[3]->to_ast_block(labels)};
 
-    case TokenType::KW_SKIP:
-        return ast::Skip{};
-
+    case TokenType::KW_SKIP:{
+        size_t label = labels.size();
+        auto node = std::make_shared<ast::Skip>(label);
+        labels.push_back(node.get());
+        return ast::Cmd{*node};
+    }
     default:
         std::cerr << "Parse error when parsing ast cmd" << std::endl;
         std::abort();
@@ -227,62 +234,88 @@ ast::Expr ParseTreeNode::to_ast_expr() {
     }
 }
 
-ast::Cond ParseTreeNode::to_ast_cond() {
+ast::Cond ParseTreeNode::to_ast_cond(std::vector<ast::ASTNode*>& labels) {
     using wnt = whilelang::Nonterm;
 
     // Handle boolean literals
     if (is_terminal) {
+        bool value;
         if (terminal == TokenType::KW_TRUE) {
-            return true;
+            value = true;
         }
-        if (terminal == TokenType::KW_FALSE) {
-            return false;
+        else if (terminal == TokenType::KW_FALSE) {
+            value = false;
         }
+        else {
+            std::cerr << "Parse error in condition: unexpected terminal" << std::endl;
+            std::abort();
+        }
+
+        size_t label = labels.size();
+        auto node = std::make_shared<ast::BoolConst>(value, label);
+        labels.push_back(node.get());
+        return ast::Cond{node};
     }
 
     switch (nonterminal) {
     case wnt::Cond:
         // Cond -> Disjunction
-        return children[0]->to_ast_cond();
+        return children[0]->to_ast_cond(labels);
 
     case wnt::Disjunction:
         if (children.size() == 1) {
             // Disjunction -> Conjunction
-            return children[0]->to_ast_cond();
+            return children[0]->to_ast_cond(labels);
         } else {
             // Disjunction -> Disjunction OR Conjunction
-            auto left = children[0]->to_ast_cond();
-            auto right = children[2]->to_ast_cond();
-            return ast::Logical::make(ast::Logical::Op::OR, std::move(left), std::move(right));
+            auto left = children[0]->to_ast_cond(labels);
+            auto right = children[2]->to_ast_cond(labels);
+            
+            size_t label = labels.size();
+            auto node = std::make_shared<ast::Logical>(ast::Logical::Op::OR, std::move(left), std::move(right), label);
+            labels.push_back(node.get());  // Push the raw pointer
+            return ast::Cond{node};  // Wrap in variant
         }
 
     case wnt::Conjunction:
         if (children.size() == 1) {
             // Conjunction -> BoolExpr
-            return children[0]->to_ast_cond();
+            return children[0]->to_ast_cond(labels);
         } else {
             // Conjunction -> Conjunction AND BoolExpr
-            auto left = children[0]->to_ast_cond();
-            auto right = children[2]->to_ast_cond();
-            return ast::Logical::make(ast::Logical::Op::AND, std::move(left), std::move(right));
+            auto left = children[0]->to_ast_cond(labels);
+            auto right = children[2]->to_ast_cond(labels);
+
+            size_t label = labels.size();
+            auto node = std::make_shared<ast::Logical>(ast::Logical::Op::AND, std::move(left), std::move(right), label);
+            labels.push_back(node.get());
+            return ast::Cond{node};
         }
 
     case wnt::BoolExpr:
         if (children.size() == 1) {
             // BoolExpr -> TRUE or FALSE
-            return children[0]->to_ast_cond();
+            return children[0]->to_ast_cond(labels);
         } else if (children.size() == 3 && children[1]->nonterminal == wnt::RelOp) {
             // BoolExpr -> ArithExpr RelOp ArithExpr (comparison)
             auto left = children[0]->to_ast_expr();
             auto op = children[1]->get_comparison_op();
             auto right = children[2]->to_ast_expr();
-            return ast::Comparison::make(op, std::move(left), std::move(right));
+
+            size_t label = labels.size();
+            auto node = std::make_shared<ast::Comparison>(op, std::move(left), std::move(right), label);
+            labels.push_back(node.get());
+            return ast::Cond{node};
         } else if (children.size() == 3) {
             // BoolExpr -> [ BoolExpr ]
-            return children[1]->to_ast_cond();
+            return children[1]->to_ast_cond(labels);
         } else if (children.size() == 4) {
             // BoolExpr -> NOT [ BoolExpr ]
-            return ast::Not::make(children[2]->to_ast_cond());
+            size_t label = labels.size();
+            auto cond = children[2]->to_ast_cond(labels);
+            auto node = std::make_shared<ast::Not>(std::move(cond), label);
+            labels.push_back(node.get());
+            return ast::Cond{node};
         }
         break;
 

@@ -213,10 +213,11 @@ struct ParseTreeNode {
     static void print_tree(std::shared_ptr<ParseTreeNode> node, int indent = 0);
 
     TokenType cmd_type() const;
-    ast::Cmd to_ast_cmd();
-    ast::Block to_ast_block();
+    ast::AST to_ast();
+    ast::Cmd to_ast_cmd(std::vector<ast::ASTNode*>& labels);
+    ast::Block to_ast_block(std::vector<ast::ASTNode*>& labels);
     ast::Expr to_ast_expr();
-    ast::Cond to_ast_cond();
+    ast::Cond to_ast_cond(std::vector<ast::ASTNode*>& labels);
     std::string get_token_value();
     ast::Arith::Op get_arith_op();
     ast::Comparison::Op get_comparison_op();
