@@ -5,6 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include <filesystem>
+#include <memory>
 #include <variant>
 
 #include "ast.hpp"
@@ -25,6 +26,27 @@ std::string ReplaceAll(std::string str, const std::string& from, const std::stri
 
 std::string indent(std::string str) {
     return "    " + ReplaceAll(str, "\n", "\n    ");
+}
+
+int collect_label(const ast::Cond& cond) {
+    return std::visit([](auto&& arg) {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr(std::is_same_v<T, std::shared_ptr<ast::Not>>) {
+            return arg->label;
+        }
+        else if constexpr(std::is_same_v<T, std::shared_ptr<ast::Logical>>) {
+            return arg->label;
+        }
+        else if constexpr(std::is_same_v<T, std::shared_ptr<ast::Comparison>>) {
+            return arg->label;
+        }
+        else if constexpr(std::is_same_v<T, std::shared_ptr<ast::BoolConst>>) {
+            return arg->label;
+        }
+        else {
+            static_assert(false, "Unsupported condition");
+        }
+    }, cond);
 }
 
 std::string to_while(const ast::Arith& arith);
@@ -124,11 +146,11 @@ std::string to_while(const ast::Block& block) {
             using T = std::decay_t<decltype(arg)>;
             if constexpr(std::is_same_v<T, ast::Assign>) {
                 code << arg.name << " := " << to_while(arg.value);
-                //code << " {- " << arg.label << " -}\n";
+                code << " {- " << arg.label << " -}\n";
             }
             else if constexpr(std::is_same_v<T, ast::If>) {
-                code << "if " << to_while(arg.cond) << " then\n";
-                //code << " {- " << arg.cond.label << " -}\n";
+                code << "if " << to_while(arg.cond) << " then";
+                code << " {- " << collect_label(arg.cond) << " -}\n";
                 code << indent(to_while(arg.then));
                 code << "\nelse\n";
                 code << indent(to_while(arg.el));
@@ -136,13 +158,13 @@ std::string to_while(const ast::Block& block) {
             }
             else if constexpr(std::is_same_v<T, ast::While>) {
                 code << "while " << to_while(arg.cond) << " do\n";
-                //code << " {- " << arg.cond.label << " -}\n";
+                code << " {- " << collect_label(arg.cond) << " -}\n";
                 code << indent(to_while(arg.body));
                 code << "od";
             }
             else if constexpr(std::is_same_v<T, ast::Skip>) {
                 code << "skip";
-                //code << " {- " << arg.label << " -}";
+                code << " {- " << arg.label << " -}";
             }
             else {
                 static_assert(false, "Unsupported command");
