@@ -44,7 +44,7 @@ int collect_label(const ast::Cond& cond) {
             return arg->get_label();
         }
         else {
-            static_assert(false, "Unsupported condition");
+            throw std::runtime_error("Unsupported condition");
         }
     }, cond);
 }
@@ -167,7 +167,7 @@ std::string to_while(const ast::Block& block) {
                 code << " {- " << arg.get_label() << " -}";
             }
             else {
-                static_assert(false, "Unsupported command");
+                throw std::runtime_error("Unsupported command");
             }
         }, cmd);
     }

@@ -149,7 +149,7 @@ std::string to_c_inner(const ast::Block& block) {
                 code << ";";
             }
             else {
-                static_assert(false, "Unsupported command");
+                throw std::runtime_error("Unsupported command encountered");
             }
         }, cmd);
     }
