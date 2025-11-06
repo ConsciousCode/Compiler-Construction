@@ -115,7 +115,6 @@ class If;
 class While;
 class Skip : public LabeledNode {
   public:
-    Skip() = default;
     Skip(int l) : LabeledNode(l){};
 };
 using Cmd = std::variant<Assign, If, While, Skip>;

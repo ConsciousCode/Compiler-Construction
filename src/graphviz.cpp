@@ -165,8 +165,8 @@ size_t viz_cond(const Cond& c, std::ostream& os, size_t nid) {
     return std::visit(
         [&](const auto& node) {
             using T = std::decay_t<decltype(node)>;
-            if constexpr (std::is_same_v<T, bool>) {
-                os << ind << L{nid, node ? "true" : "false"} << "\n";
+            if constexpr (std::is_same_v<T, std::shared_ptr<BoolConst>>) {
+                os << ind << L{nid, node->value ? "true" : "false"} << "\n";
                 return nid;
             } else if constexpr (std::is_same_v<T, std::shared_ptr<Not>>) {
                 return viz_not(*node, os, nid);
