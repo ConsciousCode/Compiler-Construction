@@ -311,8 +311,8 @@ ast::Cond ParseTreeNode::to_ast_cond(std::vector<ast::ASTNode*>& labels) {
             return children[1]->to_ast_cond(labels);
         } else if (children.size() == 4) {
             // BoolExpr -> NOT [ BoolExpr ]
-            size_t label = labels.size();
             auto cond = children[2]->to_ast_cond(labels);
+            size_t label = labels.size();
             auto node = std::make_shared<ast::Not>(std::move(cond), label);
             labels.push_back(node.get());
             return ast::Cond{node};
