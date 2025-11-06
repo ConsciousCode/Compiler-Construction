@@ -14,6 +14,7 @@ class ASTNode {
 class LabeledNode : public ASTNode {
   public:
     explicit LabeledNode(size_t l) : label(l){};
+    explicit LabeledNode() : label(-1){};
 
     size_t get_label() const {
         return label;
@@ -92,9 +93,9 @@ class Comparison : public LabeledNode {
     Expr left;
     Expr right;
 
-    Comparison(Op operation, Expr l, Expr r, size_t label) : LabeledNode(label), op(operation), left(l), right(r) {};
+    Comparison(Op operation, Expr l, Expr r, size_t label = -1) : LabeledNode(label), op(operation), left(l), right(r) {};
 
-    static Cond make(Op op, Expr l, Expr r, size_t label) {
+    static Cond make(Op op, Expr l, Expr r, size_t label = -1) {
         return Cond{std::make_shared<Comparison>(op, std::move(l), std::move(r), label)};
     }
 };
@@ -104,10 +105,10 @@ class Assign : public LabeledNode {
     std::string name;
     Expr value;
 
-    Assign(std::string ident, Expr v, size_t l) : LabeledNode(l), name(std::move(ident)), value(std::move(v)) {}
-    Assign(std::string ident, int n, size_t l) : Assign(std::move(ident), Expr{n}, l) {}
-    Assign(std::string ident, const char* s, size_t l) : Assign(std::move(ident), Expr{std::string{s}}, l) {}
-    Assign(std::string ident, std::string s, size_t l) : Assign(std::move(ident), Expr{std::move(s)}, l) {}
+    Assign(std::string ident, Expr v, size_t l = -1) : LabeledNode(l), name(std::move(ident)), value(std::move(v)) {}
+    Assign(std::string ident, int n, size_t l = -1) : Assign(std::move(ident), Expr{n}, l) {}
+    Assign(std::string ident, const char* s, size_t l = -1) : Assign(std::move(ident), Expr{std::string{s}}, l) {}
+    Assign(std::string ident, std::string s, size_t l = -1) : Assign(std::move(ident), Expr{std::move(s)}, l) {}
 };
 
 class If;
