@@ -72,8 +72,7 @@ parser::ParserGenerator generate_while_parser() {
         P{Nonterm::BoolExpr,
           {T(TokenType::OP_NOT), T(TokenType::OP_LBRACK), N(Nonterm::Cond),
            T(TokenType::OP_RBRACK)}},
-        P{Nonterm::BoolExpr,
-          {T(TokenType::OP_LBRACK), N(Nonterm::Cond), T(TokenType::OP_RBRACK)}},
+        P{Nonterm::BoolExpr, {T(TokenType::OP_LBRACK), N(Nonterm::Cond), T(TokenType::OP_RBRACK)}},
         // <boolexpr> ::= <arithexpr> <relop> <arithexpr>
         P{Nonterm::BoolExpr, {N(Nonterm::ArithExpr), N(Nonterm::RelOp), N(Nonterm::ArithExpr)}},
 

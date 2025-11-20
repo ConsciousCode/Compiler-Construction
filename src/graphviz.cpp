@@ -96,6 +96,7 @@ size_t viz_cond(const Cond& c, std::ostream& os, size_t nid);
 size_t viz_arith(const Arith& a, std::ostream& os, size_t nid);
 size_t viz_block(const Block& b, std::ostream& os, size_t nid);
 size_t viz_cmd(const Cmd& c, std::ostream& os, size_t nid);
+static size_t viz_not(const Not& n, std::ostream& os, size_t nid);
 
 size_t viz_arith(const Arith& a, std::ostream& os, size_t nid) {
     size_t root = nid;
@@ -128,19 +129,23 @@ size_t viz_expr(const Expr& e, std::ostream& os, size_t nid) {
 }
 
 size_t viz_logical(const Logical& l, std::ostream& os, size_t nid) {
-    os << ind << L{nid, op_str(l.op)} << "\n";
+    size_t parent_nid = nid;  
+    
+    os << ind << L{parent_nid, std::string(op_str(l.op)) + "\\n" + std::to_string(l.get_label())} << "\n";
 
-    os << ind << Edge{nid, ++nid};
-    nid = viz_cond(l.left, os, nid);
+    size_t left_nid = nid + 1;
+    os << ind << Edge{parent_nid, left_nid};
+    nid = viz_cond(l.left, os, left_nid);
 
-    os << ind << Edge{nid, ++nid};
-    nid = viz_cond(l.right, os, nid);
+    size_t right_nid = nid + 1;
+    os << ind << Edge{parent_nid, right_nid};
+    nid = viz_cond(l.right, os, right_nid); 
 
     return nid;
 }
 
 size_t viz_not(const Not& n, std::ostream& os, size_t nid) {
-    os << ind << L{nid, "not"} << "\n";
+    os << ind << L{nid, std::string("not\\n") + std::to_string(n.get_label())} << "\n";
     os << ind << Edge{nid, ++nid};
     nid = viz_cond(n.cond, os, nid);
 
@@ -149,7 +154,7 @@ size_t viz_not(const Not& n, std::ostream& os, size_t nid) {
 
 size_t viz_cmp(const Comparison& c, std::ostream& os, size_t nid) {
     size_t root = nid;
-    os << ind << L{root, op_str(c.op)} << "\n";
+    os << ind << L{root, std::string(op_str(c.op)) + "\\n" + std::to_string(c.get_label())} << "\n";
 
     os << ind << Edge{root, ++nid};
     nid = viz_expr(c.left, os, nid);
@@ -164,13 +169,19 @@ size_t viz_cond(const Cond& c, std::ostream& os, size_t nid) {
     return std::visit(
         [&](const auto& node) {
             using T = std::decay_t<decltype(node)>;
-            if constexpr (std::is_same_v<T, bool>) {
-                os << ind << L{nid, node ? "true" : "false"} << "\n";
+            if constexpr (std::is_same_v<T, std::shared_ptr<BoolConst>>) {
+                os << ind
+                   << L{nid, std::string(node->value ? "true" : "false") + "\\n" +
+                                 std::to_string(node->get_label())}
+                   << "\n";
                 return nid;
             } else if constexpr (std::is_same_v<T, std::shared_ptr<Not>>) {
                 return viz_not(*node, os, nid);
             } else if constexpr (std::is_same_v<T, std::shared_ptr<Logical>>) {
                 return viz_logical(*node, os, nid);
+            } else if constexpr (std::is_same_v<T, std::shared_ptr<BoolConst>>) {
+                os << ind << L{nid, node->value ? "true" : "false"} << "\n";
+                return nid;
             } else {
                 return viz_cmp(*node, os, nid);
             }
@@ -209,7 +220,7 @@ size_t viz_while(const While& w, std::ostream& os, size_t nid) {
 
 size_t viz_assign(const Assign& a, std::ostream& os, size_t nid) {
     size_t root = nid;
-    os << ind << L{root, ":="} << "\n";
+    os << ind << L{root, std::string(":=\\n") + std::to_string(a.get_label())} << "\n";
 
     os << ind << Edge{root, ++nid};
     os << ind << L{nid, a.name} << "\n";
@@ -232,7 +243,8 @@ size_t viz_cmd(const Cmd& c, std::ostream& os, size_t nid) {
                 return viz_while(node, os, nid);
             } else {
                 static_assert(std::is_same_v<T, Skip>);
-                os << ind << L{nid, "skip"} << "\n";
+                os << ind << L{nid, std::string("skip\\n") + std::to_string(node.get_label())}
+                   << "\n";
                 return nid;
             }
         },

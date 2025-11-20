@@ -1,7 +1,8 @@
 #pragma once
 
-#include <set>
 #include "ast.hpp"
+
+#include <set>
 
 /**
  * Collect all the variables in an AST into a set.

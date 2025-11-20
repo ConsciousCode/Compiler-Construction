@@ -11,8 +11,8 @@
 #include <set>
 #include <sstream>
 #include <string>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 namespace parser {
 
@@ -132,7 +132,7 @@ class ParserGenerator {
 
     // Build the LR(1) automaton (states and transitions)
     void build_automaton();
-    
+
     // Populate ACTION and GOTO tables from the automaton
     void build_parse_tables();
 
@@ -148,7 +148,7 @@ class ParserGenerator {
   private:
     // Original grammar productions
     std::vector<Production> source_grammar;
-    
+
     // LR(1) automaton: collection of states (sets of LR(1) items)
     std::vector<std::set<LR1Item, LR1ItemLess>> states;
 
@@ -163,38 +163,38 @@ class ParserGenerator {
     std::unordered_map<whilelang::Nonterm, std::set<Symbol>> FIRST_NT{};
 
     // LR(1) parse tables
-    std::map<std::pair<size_t, Symbol>, Action> action_table;  // (state, terminal) → action
-    std::map<std::pair<size_t, Symbol>, size_t> goto_table;    // (state, nonterminal) → state
+    std::map<std::pair<size_t, Symbol>, Action> action_table; // (state, terminal) → action
+    std::map<std::pair<size_t, Symbol>, size_t> goto_table;   // (state, nonterminal) → state
 
     // Find the index of a production in source_grammar
     size_t production_index(whilelang::Nonterm lhs, std::vector<Symbol> const& rhs) const;
 
     // Index grammar by LHS for faster lookup during closure computation
     void index_grammar();
-    
+
     // Compute FIRST sets for all nonterminals
     void compute_first_sets();
-    
+
     // Compute FIRST set for a sequence of symbols
     std::set<Symbol, decltype(&Symbol::less)> first_of_seq(std::vector<Symbol> const& seq) const;
-    
+
     // Compute FIRST(gamma_tail · a) for lookahead calculation
     std::set<Symbol, decltype(&Symbol::less)> gamma_then_a(std::vector<Symbol> const& gamma_tail,
                                                            Symbol aSym) const;
-    
+
     // Compute closure of a set of LR(1) items
     std::set<LR1Item, LR1ItemLess> closure(std::set<LR1Item, LR1ItemLess> I) const;
-    
+
     // Compute GOTO(I, X): items reachable from I by shifting symbol X
     std::set<LR1Item, LR1ItemLess> goto_set(std::set<LR1Item, LR1ItemLess> const& I,
                                             Symbol X) const;
-    
+
     // Generate initial LR(1) item set for start state
     std::set<LR1Item, LR1ItemLess> initial_items() const;
-    
+
     // Get all symbols (terminals + nonterminals) in the grammar
     std::set<Symbol> all_symbols() const;
-    
+
     // Find existing state with given items, or add as new state if not found
     size_t find_or_add_state(std::set<LR1Item, LR1ItemLess> const& items);
 };
@@ -213,10 +213,11 @@ struct ParseTreeNode {
     static void print_tree(std::shared_ptr<ParseTreeNode> node, int indent = 0);
 
     TokenType cmd_type() const;
-    ast::Cmd to_ast_cmd();
-    ast::Block to_ast_block();
+    ast::AST to_ast();
+    ast::Cmd to_ast_cmd(std::vector<ast::ASTNode*>& labels);
+    ast::Block to_ast_block(std::vector<ast::ASTNode*>& labels);
     ast::Expr to_ast_expr();
-    ast::Cond to_ast_cond();
+    ast::Cond to_ast_cond(std::vector<ast::ASTNode*>& labels);
     std::string get_token_value();
     ast::Arith::Op get_arith_op();
     ast::Comparison::Op get_comparison_op();

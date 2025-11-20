@@ -69,7 +69,14 @@ add_executable(
     graphviz_test
     src/graphviz.cpp
     src/graphviz_test.cpp
-    src/ast_examples.cpp
+    
+    # Parser + scanner
+    src/parser.cpp
+    src/parser_generator.cpp
+    src/dotgenerator.cpp
+    src/while_parser.cpp
+    src/scanner.cpp
+    src/token.cpp
 )
 
 add_executable(
@@ -98,6 +105,19 @@ add_executable(
     cgen
     src/cgen.cpp
     src/collect_vars.cpp
+
+    # Parser + scanner
+    src/parser.cpp
+    src/parser_generator.cpp
+    src/dotgenerator.cpp
+    src/while_parser.cpp
+    src/scanner.cpp
+    src/token.cpp
+)
+
+add_executable(
+    whilegen
+    src/whilegen.cpp
 
     # Parser + scanner
     src/parser.cpp
