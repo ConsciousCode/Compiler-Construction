@@ -54,6 +54,10 @@ add_executable(wisc
     src/while_parser.cpp
     src/scanner.cpp
     src/token.cpp
+
+    # cfg managment
+    src/cfg_builder.cpp 
+    src/cfg_graphviz.cpp
 )
 target_compile_options(wisc PRIVATE -fexceptions)
 
