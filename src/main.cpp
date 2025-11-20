@@ -4,6 +4,8 @@
 #include "parser.hpp"
 #include "scanner.hpp"
 #include "while_parser.hpp"
+#include "cfg_builder.hpp"
+#include "cfg_graphviz.hpp"
 
 #include <argparse/argparse.hpp>
 #include <filesystem>
@@ -28,6 +30,7 @@ int main(int argc, char* argv[]) {
     flag(prog, "--ast", "Print the abstract syntax tree");
     flag(prog, "--graph-ast", "Graph the abstract syntax tree");
     flag(prog, "--asm", "Print the assembly code");
+    flag(prog, "--build-cfg", "Build and print the control flow graph");
     prog.add_argument("-o", "--output").help("Output file").default_value("-").required();
 
     try {
@@ -37,12 +40,18 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    bool print_tokens = prog["--tokens"] == true, print_pt = prog["--parse-tree"] == true,
-         graph_pt = prog["--graph-parse-tree"] == true, print_ast = prog["--ast"] == true,
-         graph_ast = prog["--graph-ast"] == true, print_asm = prog["--asm"] == true;
+    bool print_tokens = prog["--tokens"] == true, 
+         print_pt = prog["--parse-tree"] == true,
+         graph_pt = prog["--graph-parse-tree"] == true, 
+         print_ast = prog["--ast"] == true,
+         graph_ast = prog["--graph-ast"] == true, 
+         print_asm = prog["--asm"] == true,
+         build_cfg = prog["--build-cfg"] == true;
 
-    unsigned actions = print_tokens << TOKENIZE | (print_pt || graph_pt) << PARSE |
-                       (print_ast || graph_ast) << AST | print_asm << CODEGEN;
+    unsigned actions = print_tokens << TOKENIZE 
+                        | (print_pt || graph_pt) << PARSE 
+                        |(print_ast || graph_ast) << AST 
+                        | print_asm << CODEGEN;
 
     if (actions == 0) {
         actions = -1;
@@ -53,10 +62,28 @@ int main(int argc, char* argv[]) {
     std::string program_name = input_path.stem().string();
 
     std::string outfn = prog.get<std::string>("--output");
-    std::ostream outf(outfn == "-" ? std::cout.rdbuf() : std::ofstream(outfn).rdbuf());
+    std::ofstream ofs;
+    std::ostream* out = &std::cout;
+
+    if (outfn != "-") {
+        ofs.open(outfn);
+        if (!ofs) {
+            std::cerr << "Failed to open output file: " << outfn << "\n";
+            return 1;
+        }
+        out = &ofs;
+    }
+
+    std::ostream& outf = *out;
 
     // Load and read file;
     std::ifstream ifs(input_path);
+
+    if (!ifs) {
+        std::cerr << "Failed to open input file: " << input_path << "\n";
+        return 1;
+    }
+
     std::string code, line;
     while (std::getline(ifs, line)) {
         code += line + "\n";
@@ -113,10 +140,17 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    Codegen cg;
-    CodegenOutput out = cg.generate(program, program_name);
+    //CFG Management
+    if (build_cfg) {
+        cfg::CFG g = cfg::build_cfg(program);
 
-    outf << out.riscv;
+        cfg::print_cfg_dot(g, outf);
+    }
+
+    Codegen cg;
+    CodegenOutput out_code = cg.generate(program, program_name);
+
+    outf << out_code.riscv;
 
     return 0;
 }

@@ -1,0 +1,10 @@
+digraph CGF {
+ node [shape=box];
+ B0 [label="x := 1", style=bold];
+ B1 [label="y := 2"];
+ B2 [label="z := x + y"];
+ B3 [label="output := z", peripheries=2];
+ B0 -> B1;
+ B1 -> B2;
+ B2 -> B3;
+}

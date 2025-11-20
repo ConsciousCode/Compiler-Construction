@@ -1,0 +1,31 @@
+strict graph {
+    N_0[label="block"]
+    N_0 -- N_1
+    N_1[label=":=\n0"]
+    N_1 -- N_2
+    N_2[label="x"]
+    N_1 -- N_3
+    N_3[label="1"]
+    N_0 -- N_4
+    N_4[label=":=\n1"]
+    N_4 -- N_5
+    N_5[label="y"]
+    N_4 -- N_6
+    N_6[label="2"]
+    N_0 -- N_7
+    N_7[label=":=\n2"]
+    N_7 -- N_8
+    N_8[label="z"]
+    N_7 -- N_9
+    N_9[label="+"]
+    N_9 -- N_a
+    N_a[label="x"]
+    N_9 -- N_b
+    N_b[label="y"]
+    N_0 -- N_c
+    N_c[label=":=\n3"]
+    N_c -- N_d
+    N_d[label="output"]
+    N_c -- N_e
+    N_e[label="z"]
+}
