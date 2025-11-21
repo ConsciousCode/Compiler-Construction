@@ -14,7 +14,7 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(COMMON_FLAGS "-Wall -Wextra -Werror -fno-exceptions -fno-rtti")
+set(COMMON_FLAGS "-Wall -Wextra -Werror -fno-rtti")
 
 # Flags by build type
 set(CMAKE_CXX_FLAGS_DEBUG   "${COMMON_FLAGS} -g")
