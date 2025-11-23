@@ -58,6 +58,7 @@ add_executable(wisc
     # cfg managment
     src/cfg_builder.cpp 
     src/cfg_graphviz.cpp
+    src/cfg_codegen.cpp
 )
 target_compile_options(wisc PRIVATE -fexceptions)
 

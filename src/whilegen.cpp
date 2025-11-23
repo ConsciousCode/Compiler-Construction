@@ -6,6 +6,8 @@
 #include "scanner.hpp"
 #include "while_parser.hpp"
 
+#include "whilegen.hpp"
+
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -47,11 +49,6 @@ int collect_label(const ast::Cond& cond) {
         },
         cond);
 }
-
-std::string to_while(const ast::Arith& arith);
-std::string to_while(const ast::Cond& cond);
-std::string to_while(const ast::Assign& assign);
-std::string to_while(const ast::Block& block);
 
 std::string to_while(const ast::Expr& expr) {
     std::stringstream code;

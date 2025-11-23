@@ -6,6 +6,7 @@
 #include "while_parser.hpp"
 #include "cfg_builder.hpp"
 #include "cfg_graphviz.hpp"
+#include "cfg_codegen.hpp"
 
 #include <argparse/argparse.hpp>
 #include <filesystem>
@@ -145,6 +146,7 @@ int main(int argc, char* argv[]) {
         cfg::CFG g = cfg::build_cfg(program);
 
         cfg::print_cfg_dot(g, outf);
+        std::cout << cfg::cfg_codegen(g, "program");
     }
 
     Codegen cg;
