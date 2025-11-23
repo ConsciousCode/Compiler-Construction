@@ -31,7 +31,7 @@ int main(int argc, char* argv[]) {
     flag(prog, "--ast", "Print the abstract syntax tree");
     flag(prog, "--graph-ast", "Graph the abstract syntax tree");
     flag(prog, "--asm", "Print the assembly code");
-    flag(prog, "--build-cfg", "Build and print the control flow graph");
+    flag(prog, "--graph-cfg", "Print the control flow graph");
     prog.add_argument("-o", "--output").help("Output file").default_value("-").required();
 
     try {
@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
          print_ast = prog["--ast"] == true,
          graph_ast = prog["--graph-ast"] == true, 
          print_asm = prog["--asm"] == true,
-         build_cfg = prog["--build-cfg"] == true;
+         graph_cfg = prog["--graph-cfg"] == true;
 
     unsigned actions = print_tokens << TOKENIZE 
                         | (print_pt || graph_pt) << PARSE 
@@ -141,15 +141,17 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    //CFG Management
-    if (build_cfg) {
-        cfg::CFG g = cfg::build_cfg(program);
+    cfg::CFG g = cfg::build_cfg(program);
 
-        //cfg::print_cfg_dot(g, outf);
-        std::cout << cfg::cfg_codegen(g, "program");
+    //CFG Management
+    if (graph_cfg) {
+        cfg::print_cfg_dot(g, outf);
     }
 
-    Codegen cg;
+    if(print_asm) {
+        std::cout << cfg::cfg_codegen(g, "program");
+    }
+    //Codegen cg;
     //CodegenOutput out_code = cg.generate(program, program_name);
 
     //outf << out_code.riscv;
