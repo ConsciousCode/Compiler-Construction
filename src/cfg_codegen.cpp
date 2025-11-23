@@ -37,7 +37,7 @@ int depth_of(const ast::Expr& expr) {
             } else if constexpr (std::is_same_v<T, std::shared_ptr<ast::Arith>>) {
                 return depth_of(*node);
             } else {
-                static_assert(false, "Non-exhaustive (depth_of)");
+                static_assert(!sizeof(T*), "Non-exhaustive (depth_of)");
             }
         },
         expr);
@@ -216,7 +216,7 @@ struct CFG_Codegen {
                     // Use t0 as the temporary top of stack and then store
                     emit_arith(dst, *node, depth);
                 } else {
-                    static_assert(false, "Non-exhaustive (emit_expr)");
+                    static_assert(!sizeof(T*), "Non-exhaustive (emit_expr)");
                 }
             },
             block);
@@ -276,7 +276,7 @@ struct CFG_Codegen {
                     }
                     emit_asm("j", Lfalse);
                 } else {
-                    static_assert(false, "Non-exhaustive (emit_ast_cond)");
+                    static_assert(!sizeof(T*), "Non-exhaustive (emit_ast_cond)");
                 }
             },
             cond);
