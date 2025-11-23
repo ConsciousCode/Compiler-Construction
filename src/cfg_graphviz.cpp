@@ -77,11 +77,33 @@ namespace {
             c 
         );
     }
+
+    void append_used_vars(const cfg::CFGBlock* b, std::ostream& out) {
+        const std::vector<std::string>* vars = nullptr;
+
+        if (b->kind == cfg::BlockKind::Assignment) {
+            auto const* ab = static_cast<const cfg::AssignmentBlock*>(b);
+            vars = &ab->used_vars;
+        } else if (b->kind == cfg::BlockKind::Condition) {
+            auto const* cb = static_cast<const cfg::ConditionBlock*>(b);
+            vars = &cb->used_vars;
+        }
+
+        if(!vars || vars->empty()) {
+            return;
+        }
+
+        out <<"\\nvars: ";
+        for (std::size_t i = 0; i < vars->size(); i++) {
+            if (i > 0) out << ", ";
+            out <<(*vars)[i];
+        }
+    }
 }
 
 namespace cfg {
 
-    void print_cfg_dot(const CFG& g, std::ostream& out) {
+    void print_cfg_dot(const CFG& g, std::ostream& out, bool show_vars) {
         out << "digraph CGF {\n";
         out << " node [shape=box];\n";
 
@@ -95,6 +117,10 @@ namespace cfg {
             } else if (b->kind == BlockKind::Condition) {
                 const ConditionBlock* cb = static_cast<const ConditionBlock*>(b);
                 out << cond_to_string(cb->cond) << " ?";
+            }
+
+            if (show_vars) {
+                append_used_vars(b, out);
             }
 
             out << "\"";

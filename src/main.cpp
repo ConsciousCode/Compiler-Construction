@@ -14,7 +14,6 @@
 #include <string>
 #include <vector>
 
-enum Stage { ERROR, TOKENIZE, PARSE, AST, CODEGEN };
 
 void flag(argparse::ArgumentParser& prog, const char* name, const char* help) {
     prog.add_argument(name).help(help).default_value(false).implicit_value(true);
@@ -31,7 +30,24 @@ int main(int argc, char* argv[]) {
     flag(prog, "--graph-ast", "Graph the abstract syntax tree");
     flag(prog, "--asm", "Print the assembly code");
     flag(prog, "--build-cfg", "Build and print the control flow graph");
-    prog.add_argument("-o", "--output").help("Output file").default_value("-").required();
+    flag(prog, "--show-cfg-vars", "Include used vars in CFG node labels");
+
+    prog.add_argument("-o", "--output")
+        .help("Output file")
+        .default_value("-")
+        .required();
+
+    prog.add_argument("--output-asmb")
+        .help("Assembly output file")
+        .default_value(std::string("-"));
+    
+    prog.add_argument("--output-asp")
+        .help("Ast graph (Graphviz DOT) output file")
+        .default_value(std::string("-"));
+
+    prog.add_argument("--output-cfg")
+        .help("CFG graph (Graphviz DOT) output file")
+        .default_value(std::string("-"));
 
     try {
         prog.parse_args(argc, argv);
@@ -46,16 +62,8 @@ int main(int argc, char* argv[]) {
          print_ast = prog["--ast"] == true,
          graph_ast = prog["--graph-ast"] == true, 
          print_asm = prog["--asm"] == true,
-         build_cfg = prog["--build-cfg"] == true;
-
-    unsigned actions = print_tokens << TOKENIZE 
-                        | (print_pt || graph_pt) << PARSE 
-                        |(print_ast || graph_ast) << AST 
-                        | print_asm << CODEGEN;
-
-    if (actions == 0) {
-        actions = -1;
-    }
+         build_cfg = prog["--build-cfg"] == true,
+         show_cfg_vars = prog["--show-cfg-vars"] == true;
 
     // Load in program name
     std::filesystem::path input_path(prog.get<std::string>("input"));
@@ -75,6 +83,10 @@ int main(int argc, char* argv[]) {
     }
 
     std::ostream& outf = *out;
+
+    std::string asmb_outfn = prog.get<std::string>("--output-asmb");
+    std::string asp_outfn = prog.get<std::string>("--output-asp");
+    std::string cfg_outfn = prog.get<std::string>("--output-cfg");
 
     // Load and read file;
     std::ifstream ifs(input_path);
@@ -97,19 +109,21 @@ int main(int argc, char* argv[]) {
         if (print_tokens) {
             outf << t << std::endl;
         }
-        if (t.is_error())
+        if (t.is_error()) {
             break;
+        }
         tokens.push_back(t);
         t = s.next_token();
-    }
-
-    if (actions < 1 << PARSE) {
-        return 0;
     }
 
     parser::ParserGenerator pg = generate_while_parser();
     parser::Parser p(pg);
     std::shared_ptr<parser::ParseTreeNode> pt = p.parse(tokens);
+
+    if (!pt) {
+        std::cerr << "Parse failed.\n";
+        return 1;
+    }
 
     if (print_pt) {
         // TODO: Print to arbitrary output, not just stdout
@@ -120,11 +134,13 @@ int main(int argc, char* argv[]) {
         parser::write_dot_file(pt, outfn);
     }
 
-    if (actions < 1 << AST) {
-        return 0;
+    ast::AST ast(nullptr, {});
+    try {
+        ast = pt->to_ast();
+    } catch (const std::exception& e) {
+        std::cerr << "AST construction failed: " << e.what() << "\n";
+        return 1;
     }
-
-    ast::AST ast = pt->to_ast();
     ast::Block& program = *ast.get_root();
 
     if (print_ast) {
@@ -133,24 +149,68 @@ int main(int argc, char* argv[]) {
     }
     if (graph_ast) {
         // TODO: Print to arbitrary output
-        graphviz::print_viz_block(program);
-    }
+        if (asp_outfn == "-") {
+            graphviz::print_viz_block(program);
+        } else {
+            std::ofstream ast_ofs(asp_outfn);
+            if (!ast_ofs) {
+                std::cerr << "Failed to open AST output file: " << asp_outfn << "\n";
+                return 1;
+            }
 
-    if (actions < 1 << CODEGEN) {
-        return 0;
+            std::streambuf* oldbuf = std::cout.rdbuf(ast_ofs.rdbuf());
+            graphviz::print_viz_block(program);
+            std::cout.rdbuf(oldbuf);
+        }
     }
 
     //CFG Management
     if (build_cfg) {
-        cfg::CFG g = cfg::build_cfg(program);
+        cfg::CFG g;
+        try {
+            g = cfg::build_cfg(program);
+        } catch (const std::exception& e) {
+            std::cerr << "CFG construction failed: " << e.what() << "\n";
+            return 1;
+        }
 
-        cfg::print_cfg_dot(g, outf);
+        if (cfg_outfn == "-") {
+            cfg::print_cfg_dot(g, std::cout, show_cfg_vars);
+        } else {
+            std::ofstream cfg_ofs(cfg_outfn);
+
+            if (!cfg_ofs) {
+                std::cerr << "Failed to open CFG output file: " << cfg_outfn << "\n";
+                return 1;
+            }
+
+            cfg::print_cfg_dot(g, cfg_ofs, show_cfg_vars);
+        }
     }
 
-    Codegen cg;
-    CodegenOutput out_code = cg.generate(program, program_name);
+    if (print_asm) {
+        Codegen cg;
+        CodegenOutput out_code;
+        try {
+            out_code = cg.generate(program, program_name);
+        } catch (const std::exception& e) {
+            std::cerr << "Code generation failed: " << e.what() << "\n";
+            return 1;
+        }
 
-    outf << out_code.riscv;
+        if (asmb_outfn == "-") {
+            outf << out_code.riscv;
+        } else {
+            std::ofstream asmb_ofs(asmb_outfn);
+
+            if (!asmb_ofs) {
+                std::cerr << "Failed to open assembly output file: " << asmb_outfn << "\n";
+                return 1;
+            }
+
+            asmb_ofs << out_code.riscv;
+        }
+    }
 
     return 0;
 }
