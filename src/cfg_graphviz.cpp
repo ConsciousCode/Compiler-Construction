@@ -117,6 +117,8 @@ namespace cfg {
             } else if (b->kind == BlockKind::Condition) {
                 const ConditionBlock* cb = static_cast<const ConditionBlock*>(b);
                 out << cond_to_string(cb->cond) << " ?";
+            } else if (b->kind == BlockKind::Skip) {
+                out << "skip";
             }
 
             if (show_vars) {

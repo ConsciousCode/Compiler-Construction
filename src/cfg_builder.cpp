@@ -20,6 +20,7 @@ namespace {
     Fragment build_assign(const ast::Assign& asg, cfg::CFG& g);
     Fragment build_if(const ast::If& iff, cfg::CFG& g);
     Fragment build_while(const ast::While& wh, cfg::CFG& g);
+    Fragment build_skip(cfg::CFG& g);
 
     void collect_used_vars(const ast::Expr& e, std::vector<std::string>& out) {
         std::visit(
@@ -100,7 +101,7 @@ namespace {
                 } else if constexpr (std::is_same_v<T, ast::While>) {
                     return build_while(concrete, g);
                 } else if constexpr (std::is_same_v<T, ast::Skip>) {
-                    throw std::runtime_error("build_cfg:Skip not supported yet");
+                    return build_skip(g);
                 } else {
                     static_assert(sizeof(T) == 0, "Unhandled Cmd varient");
                 }
@@ -175,6 +176,19 @@ namespace {
         result.exits = { c };
 
         return result;
+    }
+
+    Fragment build_skip(cfg::CFG& g) {
+        auto block = std::make_unique<cfg::SkipBlock>();
+        auto* raw = block.get();
+
+        raw->id = g.blocks.size();
+        g.blocks.push_back(std::move(block));
+
+        Fragment f;
+        f.entry = raw;
+        f.exits = {raw};
+        return f;
     }
 }
 

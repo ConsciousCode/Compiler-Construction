@@ -10,7 +10,8 @@ namespace cfg {
 
     enum class BlockKind {
         Assignment,
-        Condition
+        Condition,
+        Skip
     };
 
     struct CFGBlock {
@@ -42,6 +43,12 @@ namespace cfg {
 
         ConditionBlock() {
             kind = BlockKind::Condition;
+        }
+    };
+
+    struct SkipBlock : public CFGBlock {
+        SkipBlock() {
+            kind = BlockKind::Skip;
         }
     };
 
