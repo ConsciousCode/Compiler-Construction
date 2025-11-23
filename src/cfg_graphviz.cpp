@@ -137,8 +137,21 @@ namespace cfg {
 
         for (const auto& uptr : g.blocks) {
             const CFGBlock* b = uptr.get();
-            for (const CFGBlock* succ : b->succs) {
-                out << " B" << b->id << " -> B" << succ->id << ";\n";
+
+            if (b->kind == BlockKind::Condition && b->succs.size() == 2) {
+                const CFGBlock* t_succ = b->succs[0];
+                const CFGBlock* f_succ = b->succs[1];
+
+                out << " B" << b->id << " -> B" << t_succ->id
+                    << " [color=\"green\", label=\"T\"];\n";
+
+                out << " B" << b->id << " -> B" << f_succ->id
+                    << " [color=\"red\", label=\"F\"];\n";
+            } else {
+
+                for (const CFGBlock* succ : b->succs) {
+                    out << " B" << b->id << " -> B" << succ->id << ";\n";
+                }
             }
         }
 
