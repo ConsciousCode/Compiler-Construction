@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <cstdio>
 #include <set>
-#include <sstream>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
@@ -85,8 +84,8 @@ struct CFG_Codegen {
         emit.line(line, tab);
     }
 
-    void emit_comm(const std::string& comment) {
-        emit_line("# " + comment);
+    void emit_comm(const std::string& comment, bool tab=true) {
+        emit.line("# " + comment, tab);
     }
 
     std::string off_reg(int off) {
@@ -106,6 +105,25 @@ struct CFG_Codegen {
         if(it == cond_labels.end()) {
             auto label = base + "_" + std::to_string(id);
             cond_labels[id] = label;
+            return label;
+        }
+        else {
+            return it->second;
+        }
+    }
+
+    std::string build_block_label(const cfg::CFGBlock *block) {
+        auto it = cond_labels.find(block->id);
+        if(it == cond_labels.end()) {
+            std::string base;
+            if(block->kind == cfg::BlockKind::Condition) {
+                base = "L_cond";
+            }
+            else {
+                base = "L_block";
+            }
+            auto label = base + "_" + std::to_string(block->id);
+            cond_labels[block->id] = label;
             return label;
         }
         else {
@@ -266,14 +284,14 @@ struct CFG_Codegen {
         }
         seen_ids.insert(block->id);
 
-        auto it = cond_labels.find(block->id);
-        if(it != cond_labels.end()) {
-            emit.label(it->second);
-        }
-
         switch(block->kind) {
             case cfg::BlockKind::Assignment: {
                 const auto* ablock = (cfg::AssignmentBlock*)block;
+
+                auto it = cond_labels.find(block->id);
+                if(it != cond_labels.end()) {
+                    emit.label(it->second);
+                }
 
                 // Put the expr in the register
                 emit_comm(ablock->lhs + " := " + to_while(ablock->expr));
@@ -302,12 +320,9 @@ struct CFG_Codegen {
                 const auto* cblock = (cfg::ConditionBlock*)block;
                 assert(cblock->succs.size() == 2);
 
-                emit_comm("if " + to_while(cblock->cond));
+                emit_comm("if " + to_while(cblock->cond), false);
 
-                auto Lcond = build_label(block->id, "L_cond");
-                if(cblock->preds.size() > 1) {
-                    emit.label(Lcond);
-                }
+                emit.label(build_label(block->id, "L_cond"));
 
                 auto *bt = cblock->succs[0];
                 auto *bf = cblock->succs[1];
@@ -316,8 +331,8 @@ struct CFG_Codegen {
                 auto Lfalse = build_label(bf->id, "L_false");
                 emit_cond(cblock->cond, Ltrue, Lfalse);
                 
+                emit_comm("then", false);
                 auto *nt = emit_block(bt);
-                emit_comm("End of true branch");
                 if(nt != nullptr) {
                     if(seen(nt)) {
                         emit_asm("j", cond_labels[nt->id]);
@@ -325,22 +340,22 @@ struct CFG_Codegen {
                         nt = nullptr;
                     }
                     else {
-                        emit_asm("j", build_label(nt->id, "L_fi"));
+                        emit_asm("j", build_block_label(nt));
                     }
                 }
                 else {
                     emit_asm("j", "L_return");
                 }
 
-                emit_comm("End of false branch");
+                emit_comm("else", false);
                 auto *nf = emit_block(bf);
                 if(nf != nullptr) {
-                    if(nf == block) {
+                    if(seen(nt)) {
                         emit_asm("j", cond_labels[nf->id]);
                         nf = nullptr;
                     }
                     else {
-                        emit_asm("j", build_label(nf->id, "L_fi"));
+                        emit_asm("j", build_block_label(nf));
                     }
                 }
                 else {
