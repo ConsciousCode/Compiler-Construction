@@ -145,14 +145,14 @@ int main(int argc, char* argv[]) {
     if (build_cfg) {
         cfg::CFG g = cfg::build_cfg(program);
 
-        cfg::print_cfg_dot(g, outf);
+        //cfg::print_cfg_dot(g, outf);
         std::cout << cfg::cfg_codegen(g, "program");
     }
 
     Codegen cg;
-    CodegenOutput out_code = cg.generate(program, program_name);
+    //CodegenOutput out_code = cg.generate(program, program_name);
 
-    outf << out_code.riscv;
+    //outf << out_code.riscv;
 
     return 0;
 }

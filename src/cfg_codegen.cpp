@@ -1,14 +1,18 @@
 #include <algorithm>
+#include <cstdio>
+#include <set>
+#include <sstream>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
+#include <cassert>
 
 #include "cfg_codegen.hpp"
 #include "ast.hpp"
 #include "cfg.hpp"
+#include "collect_vars.hpp"
 #include "emitter.hpp"
 #include "whilegen.hpp"
-#include <assert.h>
 
 /**
  * Get the depth of an AST expression to determine the size of the
@@ -18,12 +22,12 @@ int depth_of(const ast::Arith& arith);
 int depth_of(const ast::Expr& expr);
 
 int depth_of(const ast::Arith& arith) {
-    return std::max(depth_of(arith.left), depth_of(arith.right));
+    return std::max(depth_of(arith.left), depth_of(arith.right)) + 1;
 }
 
 int depth_of(const ast::Expr& expr) {
-    return std::visit([&](auto&& value) {
-        using T = std::decay_t<decltype(value)>;
+    return std::visit([&](auto&& node) {
+        using T = std::decay_t<decltype(node)>;
         if constexpr(std::is_same_v<T, int>) {
             return 0;
         }
@@ -31,7 +35,7 @@ int depth_of(const ast::Expr& expr) {
             return 0;
         }
         else if constexpr(std::is_same_v<T, std::shared_ptr<ast::Arith>>) {
-            return depth_of(value);
+            return depth_of(*node);
         }
         else {
             static_assert(false, "Non-exhaustive (depth_of)");
@@ -43,24 +47,46 @@ int depth_of(const ast::Expr& expr) {
  * Stateful meat of codgen from CFG.
 **/
 struct CFG_Codegen {
-    int max_depth = 0;
+    int max_depth;
     std::unordered_map<std::string, int> name_offsets;
     std::unordered_map<size_t, std::string> cond_labels;
+    std::set<size_t> seen_ids;
     std::string program_name;
     Emitter emit;
 
     CFG_Codegen(const cfg::CFG& cfg, const std::string& prog) {
+        std::set<std::string> varset;
         program_name = prog;
+        max_depth = 0;
         for(const auto& block : cfg.blocks) {
             if(block->kind == cfg::BlockKind::Assignment) {
                 auto *ablock = (cfg::AssignmentBlock*)block.get();
                 max_depth = std::max(max_depth, depth_of(ablock->expr));
+
+                varset.insert(ablock->lhs);
+                varset.insert(ablock->used_vars.begin(), ablock->used_vars.end());
             }
+            else {
+                auto *cblock = (cfg::ConditionBlock*)block.get();
+                collect_vars(cblock->cond, varset);
+            }
+        }
+
+        std::vector<std::string> vars{varset.begin(), varset.end()};
+        std::sort(vars.begin(), vars.end());
+
+        int off = 0;
+        for(const auto& var : vars) {
+            name_offsets[var] = off++;
         }
     }
 
-    void emit_line(const std::string& line, bool tab=false) {
+    void emit_line(const std::string& line, bool tab=true) {
         emit.line(line, tab);
+    }
+
+    void emit_comm(const std::string& comment) {
+        emit_line("# " + comment);
     }
 
     std::string off_reg(int off) {
@@ -78,7 +104,7 @@ struct CFG_Codegen {
     std::string build_label(size_t id, const std::string& base) {
         auto it = cond_labels.find(id);
         if(it == cond_labels.end()) {
-            auto label = emit.gensym(base);
+            auto label = base + "_" + std::to_string(id);
             cond_labels[id] = label;
             return label;
         }
@@ -88,6 +114,17 @@ struct CFG_Codegen {
     }
 
     /**
+     * @return Whether or not the node has emitted code.
+    **/
+    bool seen(const cfg::CFGBlock *block) {
+        if(block == nullptr) return false;
+        return seen_ids.find(block->id) != seen_ids.end();
+    }
+
+    // Invariant for the eval stack: no subexpression can use areas of the stack
+    // below the current depth.
+
+    /**
      * Emit machine code for calculating an arithmetic expression.
      *
      * @param dst The register which should hold the top of the stack, usually t0
@@ -95,52 +132,58 @@ struct CFG_Codegen {
     **/
     void emit_arith(const std::string& dst, const ast::Arith& arith, int depth) {
         emit_expr("t0", arith.left, depth);
-        emit_expr("t0", arith.right, depth + 1);
+        emit_asm("sd", "t0", deref(depth*8, "sp"));
+        emit_expr("t1", arith.right, depth + 1);
+        emit_asm("ld", "t0", deref(depth*8, "sp"));
         switch(arith.op) {
             case ast::Arith::Op::ADD:
                 emit_line("add " + dst + ", t0, t1");
                 break;
 
             case ast::Arith::Op::SUB:
+                emit_line("sub " + dst + ", t0, t1");
+                break;
             case ast::Arith::Op::MUL:
+                emit_line("mul " + dst + ", t0, t1");
                 break;
         }
     }
 
+    void emit_asm(const std::string& op, const std::string& a) {
+        emit_line(op + " " + a);
+    }
+
+    void emit_asm(const std::string& op, const std::string& a, const std::string& b) {
+        emit_line(op + " " + a + ", " + b);
+    }
+
+    void emit_asm(const std::string& op, const std::string& a, const std::string& b, const std::string& c) {
+        emit_line(op + " " + a + ", " + b + ", " + c);
+    }
+
+    std::string deref(int by, const std::string& reg) {
+        return std::to_string(by) + "(" + reg + ")";
+    }
+
+    /**
+     * Emit machine code for calculating an expression.
+     *
+     * @param dst  The register which should hold the top of the stack
+    **/
     void emit_expr(const std::string& dst, const ast::Expr& block, int depth) {
         std::visit([&](auto&& node) {
             using T = std::decay_t<decltype(node)>;
             if constexpr(std::is_same_v<T, int>) {
-                if(depth == 0) {
-                    // Load immediate directly into the destination
-                    emit_line("ldi " + dst + ", " + std::to_string(node));
-                }
-                else {
-                    // Load immediate into t0 and store
-                    emit_line("li t0, " + std::to_string(node));
-                    emit_line("sd t0, " + std::to_string(-depth*8) + "(sp)");
-                }
+                // Load immediate into t0 and store
+                emit_asm("li", dst, std::to_string(node));
             }
             else if constexpr(std::is_same_v<T, std::string>) {
-                if(depth == 0) {
-                    // Move between registers
-                    emit_line("mv " + dst + ", " + name_reg(node));
-                }
-                else {
-                    // Store register onto the stack
-                    emit_line("sd " + name_reg(node) + ", " + std::to_string(-depth*8) + "(sp)");
-                }
+                // Store register onto the stack
+                emit_asm("mv", dst, name_reg(node));
             }
             else if constexpr(std::is_same_v<T, std::shared_ptr<ast::Arith>>) {
-                if(depth == 0) {
-                    // Use the dst directly
-                    emit_arith(dst, *node, depth);
-                }
-                else {
-                    // Use t0 as the temporary top of stack and then store
-                    emit_arith("t0", *node, depth);
-                    emit_line("sd t0, " + std::to_string(-depth*8));
-                }
+                // Use t0 as the temporary top of stack and then store
+                emit_arith(dst, *node, depth);
             }
             else {
                 static_assert(false, "Non-exhaustive (emit_expr)");
@@ -148,12 +191,15 @@ struct CFG_Codegen {
         }, block);
     }
 
+    /**
+     * Emit machine code for a conditional node (if/while) using the given labels.
+    **/
     void emit_cond(const ast::Cond& cond, const std::string& Ltrue, const std::string Lfalse) {
         std::visit([&](auto&& node) {
             using T = typename std::decay_t<decltype(node)>::element_type;
             if constexpr(std::is_same_v<T, ast::BoolConst>) {
                 // Immediate jump
-                emit_line("j " + (node->value ? Ltrue : Lfalse));
+                emit_asm("j", node->value ? Ltrue : Lfalse);
             }
             else if constexpr(std::is_same_v<T, ast::Not>) {
                 // Swap the labels
@@ -174,9 +220,13 @@ struct CFG_Codegen {
                 }
             }
             else if constexpr(std::is_same_v<T, ast::Comparison>) {
-                // Use t2 and t3 to avoid being clobbered by stack evaluation
+                // We can use these temporaries instead because relational
+                // operator expressions can't nest.
                 emit_expr("t2", node->left, 0);
-                emit_expr("t3", node->right, 0);
+                emit_expr("t3", node->right, 1);
+                
+                // RISC-V only has beq, blt, and bge but with these we can derive
+                // <= and > by swapping the order of operands
 
                 switch (node->op) {
                 case ast::Comparison::Op::EQ:
@@ -186,16 +236,16 @@ struct CFG_Codegen {
                     emit_line("blt t2, t3, " + Ltrue);
                     break;
                 case ast::Comparison::Op::LE:
-                    emit_line("bge t3, t2, " + Ltrue);
+                    emit_line("bge t3, t2, " + Ltrue); // Swap
                     break;
                 case ast::Comparison::Op::GT:
-                    emit_line("blt t3, t2, " + Ltrue);
+                    emit_line("blt t3, t2, " + Ltrue); // Swap
                     break;
                 case ast::Comparison::Op::GE:
                     emit_line("bge t2, t3, " + Ltrue);
                     break;
                 }
-                emit_line("j " + Lfalse);
+                emit_asm("j", Lfalse);
             }
             else {
                 static_assert(false, "Non-exhaustive (emit_ast_cond)");
@@ -203,39 +253,58 @@ struct CFG_Codegen {
         }, cond);
     }
 
-    void emit_block(const cfg::CFGBlock* block) {
+    /**
+     * Emit machine code for a generic block in the CFG. Does not generate
+     * code for jumping out of its own block.
+     *
+     * @return The successor, the entry of a basic block
+    **/
+    cfg::CFGBlock *emit_block(const cfg::CFGBlock* block) {
+        if(seen(block)) {
+            emit_comm("Previously seen");
+            return nullptr;
+        }
+        seen_ids.insert(block->id);
+
         auto it = cond_labels.find(block->id);
         if(it != cond_labels.end()) {
             emit.label(it->second);
         }
-        
+
         switch(block->kind) {
             case cfg::BlockKind::Assignment: {
                 const auto* ablock = (cfg::AssignmentBlock*)block;
-                assert(ablock->succs.size() == 1);
 
                 // Put the expr in the register
+                emit_comm(ablock->lhs + " := " + to_while(ablock->expr));
                 emit_expr(name_reg(ablock->lhs), ablock->expr, 0);
+
+                if(ablock->succs.size() == 0) {
+                    return nullptr;
+                }
 
                 auto *next = ablock->succs[0];
 
                 if(next->preds.size() > 1) {
-                    // The next is a target, emit a branch instead
-                    emit_line("j " + build_label(next->id, "L_fi"));
+                    if(seen(next)) {
+                        emit_asm("j", cond_labels[next->id]);
+                        return nullptr;
+                    }
+                    // Exiting the current basic block
+                    return next;
                 }
-                else {
-                    // Keep going
-                    emit_block(next);
-                }
+
+                // Continue basic block
+                return emit_block(next);
             }
 
             case cfg::BlockKind::Condition: {
                 const auto* cblock = (cfg::ConditionBlock*)block;
                 assert(cblock->succs.size() == 2);
 
-                emit_line("#if " + to_while(cblock->cond));                
+                emit_comm("if " + to_while(cblock->cond));
 
-                auto Lcond = build_label(block->id, "L_loop");
+                auto Lcond = build_label(block->id, "L_cond");
                 if(cblock->preds.size() > 1) {
                     emit.label(Lcond);
                 }
@@ -243,44 +312,103 @@ struct CFG_Codegen {
                 auto *bt = cblock->succs[0];
                 auto *bf = cblock->succs[1];
 
-                auto Ltrue = build_label(bt->id, "L_if_true");
-                auto Lfalse = build_label(bf->id, "L_if_false");
+                auto Ltrue = build_label(bt->id, "L_true");
+                auto Lfalse = build_label(bf->id, "L_false");
                 emit_cond(cblock->cond, Ltrue, Lfalse);
                 
-                emit_block(bt);
-                emit_block(bf);
+                auto *nt = emit_block(bt);
+                emit_comm("End of true branch");
+                if(nt != nullptr) {
+                    if(seen(nt)) {
+                        emit_asm("j", cond_labels[nt->id]);
+                        // Clear to not interfere with determining the return
+                        nt = nullptr;
+                    }
+                    else {
+                        emit_asm("j", build_label(nt->id, "L_fi"));
+                    }
+                }
+                else {
+                    emit_asm("j", "L_return");
+                }
+
+                emit_comm("End of false branch");
+                auto *nf = emit_block(bf);
+                if(nf != nullptr) {
+                    if(nf == block) {
+                        emit_asm("j", cond_labels[nf->id]);
+                        nf = nullptr;
+                    }
+                    else {
+                        emit_asm("j", build_label(nf->id, "L_fi"));
+                    }
+                }
+                else {
+                    emit_asm("j", "L_return");
+                }
+
+                // Return whichever isn't null if any
+                if(nt == nf) {
+                    return nt;
+                }
+                if(nt == nullptr) {
+                    return nf;
+                }
+                return nt;
             }
         }
+
+        return nullptr;
     }
 
-    void emit_prelude() {
+    void emit_prologue() {
+        std::string sb;  ;
+        for(const auto& [name, off] : name_offsets) {
+            sb = name + "=" + off_reg(off) + ", " + sb;
+        }
+        emit_line("#vars: " + sb, false);
+
         emit_line(".text", false);
         emit_line(".globl " + program_name, false);
         emit.label(program_name);
+
+        // Allocate stack space for the expression evaluation stack
         emit_line("addi sp, sp, -" + std::to_string(max_depth*8));
 
+        // Unload variables from the array
         for(const auto& [name, off] : name_offsets) {
-            emit_line("#" + off_reg(off) + "<-input");
+            emit_comm(off_reg(off) + " <- input (" + name + ")");
             emit_line(
                 "ld " + off_reg(off) + ", " + std::to_string(off * 8) + "(a0)"
             );
         }
+        emit_line("");
     }
 
     void emit_epilogue() {
+        emit_line("");
+
+        emit.label("L_return");
+        
+        // Undo the stack allocation
         emit_line("addi sp, sp, " + std::to_string(max_depth*8));
+
+        // Load variables back into the array
         for(const auto& [name, off] : name_offsets) {
-            emit_line("#output<-" + off_reg(off));
+            emit_comm("output (" + name + ") <- " + off_reg(off));
             emit_line(
                 "sd " + off_reg(off) + ", " + std::to_string(off * 8) + "(a0)"
             );
         }
-        emit_line("ret", false);
+        emit_line("ret");
     }
 
     void cfg_codegen(const cfg::CFGBlock* block) {
-        emit_prelude();
-        emit_block(block);
+        emit_prologue();
+        const cfg::CFGBlock *next = block;
+        do {
+            next = emit_block(next);
+        } while(next != nullptr);
         emit_epilogue();
     }
 };

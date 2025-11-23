@@ -175,6 +175,7 @@ std::string to_while(const ast::Block& block) {
     return code.str();
 }
 
+/*
 int main(int argc, char* argv[]) {
     if (argc < 2) {
         std::cerr << "Usage: " << argv[0] << " <input_file>" << std::endl;
@@ -209,3 +210,4 @@ int main(int argc, char* argv[]) {
 
     std::cout << to_while(*pt->to_ast().get_root());
 }
+*/

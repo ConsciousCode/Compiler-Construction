@@ -46,6 +46,7 @@ add_executable(wisc
     src/codegen.cpp
     src/emitter.cpp
     src/collect_vars.cpp
+    src/whilegen.cpp
 
     # Parser + scanner
     src/parser.cpp
@@ -120,6 +121,7 @@ add_executable(
     src/token.cpp
 )
 
+#[[
 add_executable(
     whilegen
     src/whilegen.cpp
@@ -132,6 +134,7 @@ add_executable(
     src/scanner.cpp
     src/token.cpp
 )
+]]
 
 target_compile_definitions(scanner_test PRIVATE
     EXAMPLES_DIR="${CMAKE_SOURCE_DIR}/examples"
