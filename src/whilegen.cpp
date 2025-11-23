@@ -2,11 +2,11 @@
  * Generate While code from the AST.
  */
 
+#include "whilegen.hpp"
+
 #include "ast.hpp"
 #include "scanner.hpp"
 #include "while_parser.hpp"
-
-#include "whilegen.hpp"
 
 #include <filesystem>
 #include <fstream>

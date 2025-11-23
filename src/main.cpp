@@ -1,12 +1,12 @@
 #include "ast.hpp"
+#include "cfg_builder.hpp"
+#include "cfg_codegen.hpp"
+#include "cfg_graphviz.hpp"
 #include "codegen.hpp"
 #include "graphviz.hpp"
 #include "parser.hpp"
 #include "scanner.hpp"
 #include "while_parser.hpp"
-#include "cfg_builder.hpp"
-#include "cfg_graphviz.hpp"
-#include "cfg_codegen.hpp"
 
 #include <argparse/argparse.hpp>
 #include <filesystem>
@@ -14,7 +14,6 @@
 #include <iostream>
 #include <string>
 #include <vector>
-
 
 void flag(argparse::ArgumentParser& prog, const char* name, const char* help) {
     prog.add_argument(name).help(help).default_value(false).implicit_value(true);
@@ -33,15 +32,10 @@ int main(int argc, char* argv[]) {
     flag(prog, "--build-cfg", "Build and print the control flow graph");
     flag(prog, "--show-cfg-vars", "Include used vars in CFG node labels");
 
-    prog.add_argument("-o", "--output")
-        .help("Output file")
-        .default_value("-")
-        .required();
+    prog.add_argument("-o", "--output").help("Output file").default_value("-").required();
 
-    prog.add_argument("--output-asmb")
-        .help("Assembly output file")
-        .default_value(std::string("-"));
-    
+    prog.add_argument("--output-asmb").help("Assembly output file").default_value(std::string("-"));
+
     prog.add_argument("--output-asp")
         .help("Ast graph (Graphviz DOT) output file")
         .default_value(std::string("-"));
@@ -57,14 +51,10 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    bool print_tokens = prog["--tokens"] == true, 
-         print_pt = prog["--parse-tree"] == true,
-         graph_pt = prog["--graph-parse-tree"] == true, 
-         print_ast = prog["--ast"] == true,
-         graph_ast = prog["--graph-ast"] == true, 
-         print_asm = prog["--asm"] == true,
-         build_cfg = prog["--build-cfg"] == true,
-         show_cfg_vars = prog["--show-cfg-vars"] == true;
+    bool print_tokens = prog["--tokens"] == true, print_pt = prog["--parse-tree"] == true,
+         graph_pt = prog["--graph-parse-tree"] == true, print_ast = prog["--ast"] == true,
+         graph_ast = prog["--graph-ast"] == true, print_asm = prog["--asm"] == true,
+         build_cfg = prog["--build-cfg"] == true, show_cfg_vars = prog["--show-cfg-vars"] == true;
 
     // Load in program name
     std::filesystem::path input_path(prog.get<std::string>("input"));
@@ -173,7 +163,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    //CFG Management
+    // CFG Management
     if (build_cfg) {
         if (cfg_outfn == "-") {
             cfg::print_cfg_dot(g, std::cout, show_cfg_vars);
@@ -214,7 +204,7 @@ int main(int argc, char* argv[]) {
         }
     }
     */
-    if(print_asm) {
+    if (print_asm) {
         std::cout << cfg::cfg_codegen(g, "program");
     }
 
