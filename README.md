@@ -22,6 +22,57 @@ cmake --build build -j
 ```bash
 wisc <input_file>
 ```
+## Command Line Reference for `wisc`
+
+The `wisc` compiler supports multiple output modes and debugging tools for viewing intermediate compilation stages.
+### Basic usage
+
+`wisc <input_file>`
+
+If no other flags are provided, `wisc` generates assembly and prints it to stdout.
+
+---
+### Stage-inspection Flags
+
+|Flag|Description|
+|---|---|
+|`--tokens`|Print lexical tokens from the scanner.|
+|`--parse-tree`|Print a human-readable parse tree.|
+|`--graph-parse-tree`|Output a Graphviz DOT parse tree.|
+|`--ast`|Print the AST in a debug textual form.|
+|`--graph-ast`|Output a Graphviz DOT AST.|
+|`--build-cfg`|Build the program’s CFG and output it.|
+|`--asm`|Print generated RISC-V assembly code.|
+
+Multiple flags may be combined.
+
+---
+### Output Redirection Flags
+
+By default, all output is written to stdout.  
+The following flags allow writing specific artifacts to files:
+
+|Flag|Description|
+|---|---|
+|`--output <file>`|General output (tokens, parse tree, RISC-V if no other file).|
+|`--output-asmb <file>`|Write RISC-V assembly to `<file>`.|
+|`--output-asp <file>`|Write AST Graphviz DOT to `<file>`.|
+|`--output-cfg <file>`|Write CFG Graphviz DOT to `<file>`.|
+
+Example:
+
+`wisc examples/fib.while --graph-ast --output-asp fib_ast.dot`
+
+---
+### CFG Visualization Options
+
+|Flag|Description|
+|---|---|
+|`--cfg-vars`|Include the list of used variables in each CFG block.|
+
+Example:
+
+`wisc examples/loop.while --build-cfg --cfg-vars --output-cfg loop_cfg.dot`
 
 2. Run the generated assembly on a RISC-V machine (see examples below)
 

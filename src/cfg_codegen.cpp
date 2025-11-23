@@ -58,16 +58,23 @@ struct CFG_Codegen {
         program_name = prog;
         max_depth = 0;
         for(const auto& block : cfg.blocks) {
-            if(block->kind == cfg::BlockKind::Assignment) {
-                auto *ablock = (cfg::AssignmentBlock*)block.get();
-                max_depth = std::max(max_depth, depth_of(ablock->expr));
+            switch(block->kind) {
+                case cfg::BlockKind::Assignment: {
+                    auto *ablock = (cfg::AssignmentBlock*)block.get();
+                    max_depth = std::max(max_depth, depth_of(ablock->expr));
 
-                varset.insert(ablock->lhs);
-                varset.insert(ablock->used_vars.begin(), ablock->used_vars.end());
-            }
-            else {
-                auto *cblock = (cfg::ConditionBlock*)block.get();
-                collect_vars(cblock->cond, varset);
+                    varset.insert(ablock->lhs);
+                    varset.insert(ablock->used_vars.begin(), ablock->used_vars.end());
+                    break;
+                }
+                case cfg::BlockKind::Condition: {
+                    auto *cblock = (cfg::ConditionBlock*)block.get();
+                    collect_vars(cblock->cond, varset);
+                    break;
+                }
+                case cfg::BlockKind::Skip: {
+                    break;
+                }
             }
         }
 
@@ -370,6 +377,12 @@ struct CFG_Codegen {
                     return nf;
                 }
                 return nt;
+            }
+
+            case cfg::BlockKind::Skip: {
+                emit_comm("Skip");
+                if(block->succs.size() == 0) return nullptr;
+                return block->succs[0];
             }
         }
 
