@@ -1,0 +1,23 @@
+digraph CGF {
+ node [shape=box];
+ B0 [label="a := 0", style=bold];
+ B1 [label="b := 1"];
+ B2 [label="z := 0"];
+ B3 [label="not(n = z) ?"];
+ B4 [label="t := a + b"];
+ B5 [label="a := b"];
+ B6 [label="b := t"];
+ B7 [label="n := n - 1"];
+ B8 [label="z := 0"];
+ B9 [label="output := a", peripheries=2];
+ B0 -> B1;
+ B1 -> B2;
+ B2 -> B3;
+ B3 -> B4;
+ B3 -> B9;
+ B4 -> B5;
+ B5 -> B6;
+ B6 -> B7;
+ B7 -> B8;
+ B8 -> B3;
+}

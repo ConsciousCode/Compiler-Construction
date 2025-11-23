@@ -10,6 +10,7 @@ namespace cfg {
 
     enum class BlockKind {
         Assignment,
+        Condition
     };
 
     struct CFGBlock {
@@ -29,6 +30,19 @@ namespace cfg {
         std::string lhs;
         ast::Expr expr;
         std::vector<std::string> used_vars;
+
+        AssignmentBlock() {
+            kind = BlockKind::Assignment;
+        }
+    };
+
+    struct ConditionBlock : public CFGBlock {
+        ast::Cond cond;
+        std::vector<std::string> used_vars;
+
+        ConditionBlock() {
+            kind = BlockKind::Condition;
+        }
     };
 
     struct CFG {
