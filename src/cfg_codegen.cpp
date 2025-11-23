@@ -136,7 +136,7 @@ struct CFG_Codegen {
     **/
     bool seen(const cfg::CFGBlock *block) {
         if(block == nullptr) return false;
-        return seen_ids.find(block->id) != seen_ids.end();
+        return seen_ids.count(block->id) != 0;
     }
 
     // Invariant for the eval stack: no subexpression can use areas of the stack
