@@ -5,6 +5,7 @@
 #include <type_traits>
 #include <unordered_map>
 #include <cassert>
+#include <iostream>
 
 #include "cfg_codegen.hpp"
 #include "ast.hpp"
@@ -89,10 +90,17 @@ struct CFG_Codegen {
 
     void emit_line(const std::string& line, bool tab=true) {
         emit.line(line, tab);
+        //if(tab) std::cout << "   ";
+        //std::cout << line << std::endl;
     }
 
     void emit_comm(const std::string& comment, bool tab=true) {
-        emit.line("# " + comment, tab);
+        emit_line("# " + comment, tab);
+    }
+
+    void emit_label(const std::string& label) {
+        emit.label(label);
+        //std::cout << label << ":" << std::endl;
     }
 
     std::string off_reg(int off) {
@@ -228,19 +236,19 @@ struct CFG_Codegen {
             }
             else if constexpr(std::is_same_v<T, ast::Not>) {
                 // Swap the labels
-                emit_cond(node, Lfalse, Ltrue);
+                emit_cond(node->cond, Lfalse, Ltrue);
             }
             else if constexpr(std::is_same_v<T, ast::Logical>) {
                 // Short-circuiting
                 if (node->op == ast::Logical::Op::AND) {
                     auto Lmid = emit.gensym("L_and");
                     emit_cond(node->left, Lmid, Lfalse);
-                    emit.label(Lmid);
+                    emit_label(Lmid);
                     emit_cond(node->right, Ltrue, Lfalse);
                 } else {
                     auto Lmid = emit.gensym("L_or");
                     emit_cond(node->left, Ltrue, Lmid);
-                    emit.label(Lmid);
+                    emit_label(Lmid);
                     emit_cond(node->right, Ltrue, Lfalse);
                 }
             }
@@ -279,15 +287,21 @@ struct CFG_Codegen {
     }
 
     /**
-     * Emit machine code for a generic block in the CFG. Does not generate
-     * code for jumping out of its own block.
+     * Emit machine code for a generic block in the CFG. This emits using
+     * depth-first search where any block with more than one predecessor gets
+     * a label.
      *
      * @return The successor, the entry of a basic block
     **/
-    cfg::CFGBlock *emit_block(const cfg::CFGBlock* block) {
+    void emit_block(const cfg::CFGBlock *block) {
+        // Continue until we've seen the block
+        if(block == nullptr) {
+            // Just in case?
+            return;
+        }
         if(seen(block)) {
-            emit_comm("Previously seen");
-            return nullptr;
+            emit_asm("j", cond_labels[block->id]);
+            return;
         }
         seen_ids.insert(block->id);
 
@@ -295,9 +309,8 @@ struct CFG_Codegen {
             case cfg::BlockKind::Assignment: {
                 const auto* ablock = (cfg::AssignmentBlock*)block;
 
-                auto it = cond_labels.find(block->id);
-                if(it != cond_labels.end()) {
-                    emit.label(it->second);
+                if(ablock->preds.size() > 1 || cond_labels.count(ablock->id) > 0) {
+                    emit_label(build_label(ablock->id, "L_block"));
                 }
 
                 // Put the expr in the register
@@ -305,22 +318,12 @@ struct CFG_Codegen {
                 emit_expr(name_reg(ablock->lhs), ablock->expr, 0);
 
                 if(ablock->succs.size() == 0) {
-                    return nullptr;
+                    emit_asm("j", "L_return");
                 }
-
-                auto *next = ablock->succs[0];
-
-                if(next->preds.size() > 1) {
-                    if(seen(next)) {
-                        emit_asm("j", cond_labels[next->id]);
-                        return nullptr;
-                    }
-                    // Exiting the current basic block
-                    return next;
+                else {
+                    emit_block(ablock->succs[0]);
                 }
-
-                // Continue basic block
-                return emit_block(next);
+                break;
             }
 
             case cfg::BlockKind::Condition: {
@@ -329,7 +332,7 @@ struct CFG_Codegen {
 
                 emit_comm("if " + to_while(cblock->cond), false);
 
-                emit.label(build_label(block->id, "L_cond"));
+                emit_label(build_label(block->id, "L_cond"));
 
                 auto *bt = cblock->succs[0];
                 auto *bf = cblock->succs[1];
@@ -338,55 +341,31 @@ struct CFG_Codegen {
                 auto Lfalse = build_label(bf->id, "L_false");
                 emit_cond(cblock->cond, Ltrue, Lfalse);
                 
-                emit_comm("then", false);
-                auto *nt = emit_block(bt);
-                if(nt != nullptr) {
-                    if(seen(nt)) {
-                        emit_asm("j", cond_labels[nt->id]);
-                        // Clear to not interfere with determining the return
-                        nt = nullptr;
-                    }
-                    else {
-                        emit_asm("j", build_block_label(nt));
-                    }
-                }
-                else {
-                    emit_asm("j", "L_return");
+                if(!seen(bt)) {
+                    emit_comm("then", false);
+                    //emit_label(Ltrue);
+                    emit_block(bt);
                 }
 
-                emit_comm("else", false);
-                auto *nf = emit_block(bf);
-                if(nf != nullptr) {
-                    if(seen(nt)) {
-                        emit_asm("j", cond_labels[nf->id]);
-                        nf = nullptr;
-                    }
-                    else {
-                        emit_asm("j", build_block_label(nf));
-                    }
+                if(!seen(bf)) {
+                    emit_comm("else", false);
+                    //emit_label(Lfalse);
+                    emit_block(bf);
                 }
-                else {
-                    emit_asm("j", "L_return");
-                }
-
-                // Return whichever isn't null if any
-                if(nt == nf) {
-                    return nt;
-                }
-                if(nt == nullptr) {
-                    return nf;
-                }
-                return nt;
+                break;
             }
 
             case cfg::BlockKind::Skip: {
                 emit_comm("Skip");
-                if(block->succs.size() == 0) return nullptr;
-                return block->succs[0];
+                if(block->succs.size() == 0) {
+                    emit_asm("j", "L_return");
+                }
+                else {
+                    emit_block(block->succs[0]);
+                }
+                break;
             }
         }
-
-        return nullptr;
     }
 
     void emit_prologue() {
@@ -398,7 +377,7 @@ struct CFG_Codegen {
 
         emit_line(".text", false);
         emit_line(".globl " + program_name, false);
-        emit.label(program_name);
+        emit_label(program_name);
 
         // Allocate stack space for the expression evaluation stack
         emit_line("addi sp, sp, -" + std::to_string(max_depth*8));
@@ -416,7 +395,7 @@ struct CFG_Codegen {
     void emit_epilogue() {
         emit_line("");
 
-        emit.label("L_return");
+        emit_label("L_return");
         
         // Undo the stack allocation
         emit_line("addi sp, sp, " + std::to_string(max_depth*8));
@@ -433,10 +412,7 @@ struct CFG_Codegen {
 
     void cfg_codegen(const cfg::CFGBlock* block) {
         emit_prologue();
-        const cfg::CFGBlock *next = block;
-        do {
-            next = emit_block(next);
-        } while(next != nullptr);
+        emit_block(block);
         emit_epilogue();
     }
 };
