@@ -139,7 +139,7 @@ run_test stress_gcd_sub 1234567 1234567 7654321 0
 # run_test stress_prime_count 50 50 0 0 0
 
 # sumfactors (N)
-# run_test sumfactors 20 20 0 0 0
+run_test sumfactors 20 20 0 0 0
 
 printf "%.s-" {1..75}
 echo ""

@@ -246,7 +246,7 @@ add_while_program(stress_factorial)
 add_while_program(stress_gcd_mod)
 add_while_program(stress_gcd_sub)
 # add_while_program(stress_prime_count)
-# add_while_program(sumfactors)
+add_while_program(sumfactors)
 add_while_program(torture)
 
 # Create a target that builds all WHILE programs
