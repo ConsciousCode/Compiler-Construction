@@ -183,6 +183,9 @@ if(GIT_FOUND)
     )
 endif()
 
+# Initialize global property to track WHILE programs
+set_property(GLOBAL PROPERTY WHILE_PROGRAMS_LIST "")
+
 function(add_while_program PROGRAM_NAME)
     set(WHILE_FILE "${PROJECT_SOURCE_DIR}/examples/while/${PROGRAM_NAME}.while")
     set(ASM_FILE "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}.s")
@@ -222,15 +225,16 @@ function(add_while_program PROGRAM_NAME)
     
     # Create custom target that depends on BOTH versions
     add_custom_target(${PROGRAM_NAME} ALL DEPENDS ${RISCV_EXEC} ${PROGRAM_NAME}_c)
+    
+    # Register this program in the global list
+    set_property(GLOBAL APPEND PROPERTY WHILE_PROGRAMS_LIST ${PROGRAM_NAME})
 endfunction()
-
-# Uncommented programs currently don't work
 
 add_while_program(add)
 add_while_program(chain_prime)
 add_while_program(closest_prime)
 add_while_program(collatz)
-add_while_program(comment)
+# add_while_program(comment)
 # add_while_program(comparatornetwork_bestknown_for_11)
 # add_while_program(countTriangularNumbers)
 add_while_program(factorial)
@@ -249,11 +253,9 @@ add_while_program(stress_gcd_sub)
 add_while_program(sumfactors)
 add_while_program(torture)
 
-# Create a target that builds all WHILE programs
+# Automatically create a target that builds all WHILE programs
+get_property(ALL_WHILE_PROGRAMS GLOBAL PROPERTY WHILE_PROGRAMS_LIST)
 add_custom_target(while_programs
-    DEPENDS add chain_prime closest_prime collatz
-            factorial fibonacci
-            stress_factorial
-            stress_gcd_mod stress_gcd_sub
+    DEPENDS ${ALL_WHILE_PROGRAMS}
     COMMENT "Building all WHILE programs"
 )
