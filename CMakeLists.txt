@@ -187,7 +187,7 @@ function(add_while_program PROGRAM_NAME)
     set(WHILE_FILE "${PROJECT_SOURCE_DIR}/examples/while/${PROGRAM_NAME}.while")
     set(ASM_FILE "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}.s")
     set(C_FILE "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}.c")
-    set(RISCV_EXEC "${CMAKE_BINARY_DIR}/run_${PROGRAM_NAME}")
+    set(RISCV_EXEC "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}_risc")
     
     # Custom command to generate assembly from WHILE code
     add_custom_command(
@@ -228,3 +228,9 @@ add_while_program(fibonacci)
 add_while_program(factorial)
 add_while_program(collatz)
 add_while_program(stress_factorial)
+
+# Create a target that builds all WHILE programs
+add_custom_target(while_programs
+    DEPENDS fibonacci factorial collatz stress_factorial
+    COMMENT "Building all WHILE programs"
+)
