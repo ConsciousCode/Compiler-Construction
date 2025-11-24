@@ -352,6 +352,11 @@ struct CFG_Codegen {
 
         case cfg::BlockKind::Skip: {
             emit_comm("Skip");
+            auto it = cond_labels.find(block->id);
+            if(it != cond_labels.end()) {
+                emit_label(it->second);
+            }
+            
             if (block->succs.size() == 0) {
                 emit_asm("j", "L_return");
             } else {
