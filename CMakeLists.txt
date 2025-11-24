@@ -230,32 +230,30 @@ add_while_program(add)
 add_while_program(chain_prime)
 add_while_program(closest_prime)
 add_while_program(collatz)
-# add_while_program(comment)
-add_while_program(comparatornetwork_bestknown_for_11)
-add_while_program(countTriangularNumbers)
+add_while_program(comment)
+# add_while_program(comparatornetwork_bestknown_for_11)
+# add_while_program(countTriangularNumbers)
 add_while_program(factorial)
 add_while_program(fibonacci)
-# add_while_program(isprime)
-add_while_program(loop)
-add_while_program(madprimes)
-add_while_program(primescounter)
-# add_while_program(pseudomatrices)
-# add_while_program(quad2)
-# add_while_program(quadratic)
+add_while_program(isprime)
+# add_while_program(loop)
+# add_while_program(madprimes)
+# add_while_program(primescounter)
+add_while_program(pseudomatrices)
+add_while_program(quad2)
+add_while_program(quadratic)
 add_while_program(stress_factorial)
 add_while_program(stress_gcd_mod)
 add_while_program(stress_gcd_sub)
-add_while_program(stress_prime_count)
-add_while_program(sumfactors)
-# add_while_program(torture)
+# add_while_program(stress_prime_count)
+# add_while_program(sumfactors)
+add_while_program(torture)
 
 # Create a target that builds all WHILE programs
 add_custom_target(while_programs
     DEPENDS add chain_prime closest_prime collatz
-            comparatornetwork_bestknown_for_11 countTriangularNumbers
-            factorial fibonacci loop madprimes primescounter
+            factorial fibonacci
             stress_factorial
-            stress_gcd_mod stress_gcd_sub stress_prime_count
-            sumfactors
+            stress_gcd_mod stress_gcd_sub
     COMMENT "Building all WHILE programs"
 )
