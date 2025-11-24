@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.15...3.22)
 
 project(
     "WISC Compiler"
-    VERSION 0.1
+    VERSION 0.2
     LANGUAGES C CXX ASM
 )
 
