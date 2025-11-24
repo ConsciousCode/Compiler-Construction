@@ -27,52 +27,54 @@ wisc <input_file>
 The `wisc` compiler supports multiple output modes and debugging tools for viewing intermediate compilation stages.
 ### Basic usage
 
-`wisc <input_file>`
+`wisc <input_file> [-o <output_file>]`
 
-If no other flags are provided, `wisc` generates assembly and prints it to stdout.
+By default, `wisc` generates RISC-V assembly and writes it to `out.s`.
 
 ---
 ### Stage-inspection Flags
 
-|Flag|Description|
-|---|---|
-|`--tokens`|Print lexical tokens from the scanner.|
-|`--parse-tree`|Print a human-readable parse tree.|
-|`--graph-parse-tree`|Output a Graphviz DOT parse tree.|
-|`--ast`|Print the AST in a debug textual form.|
-|`--graph-ast`|Output a Graphviz DOT AST.|
-|`--build-cfg`|Build the program’s CFG and output it.|
-|`--asm`|Print generated RISC-V assembly code.|
+|Flag|Short|Description|
+|---|---|---|
+|`--print-tokens`|`-pt`|Print lexical tokens from the scanner.|
+|`--print-parse-tree`|`-ppt`|Print a human-readable parse tree.|
+|`--graph-parse-tree [file]`|`-gpt`|Output a Graphviz DOT parse tree (default: `parse_tree.dot`).|
+|`--print-ast`|`-pa`|Print the AST in a debug textual form.|
+|`--graph-ast [file]`|`-ga`|Output a Graphviz DOT AST (default: `ast.dot`).|
+|`--graph-cfg [file]`|`-gc`|Output a Graphviz DOT CFG (default: `cfg.dot`).|
 
 Multiple flags may be combined.
 
 ---
-### Output Redirection Flags
+### Output Flags
 
-By default, all output is written to stdout.  
-The following flags allow writing specific artifacts to files:
+|Flag|Short|Description|
+|---|---|---|
+|`--output <file>`|`-o`|Write RISC-V assembly to `<file>` (default: `out.s`).|
 
-|Flag|Description|
-|---|---|
-|`--output <file>`|General output (tokens, parse tree, RISC-V if no other file).|
-|`--output-asmb <file>`|Write RISC-V assembly to `<file>`.|
-|`--output-asp <file>`|Write AST Graphviz DOT to `<file>`.|
-|`--output-cfg <file>`|Write CFG Graphviz DOT to `<file>`.|
+Examples:
+```bash
+# Generate assembly to custom file
+wisc examples/fib.while -o fibonacci.s
 
-Example:
+# Generate AST graph to custom file
+wisc examples/fib.while -ga fib_ast.dot
 
-`wisc examples/fib.while --graph-ast --output-asp fib_ast.dot`
+# Generate parse tree graph (uses default parse_tree.dot)
+wisc examples/fib.while -gpt
+```
 
 ---
 ### CFG Visualization Options
 
-|Flag|Description|
-|---|---|
-|`--cfg-vars`|Include the list of used variables in each CFG block.|
+|Flag|Short|Description|
+|---|---|---|
+|`--show-cfg-vars`|`-sv`|Include the list of used variables in each CFG block.|
 
 Example:
-
-`wisc examples/loop.while --build-cfg --cfg-vars --output-cfg loop_cfg.dot`
+```bash
+wisc examples/loop.while -gc loop_cfg.dot -sv
+```
 
 2. Run the generated assembly on a RISC-V machine (see examples below)
 
@@ -190,7 +192,6 @@ od
 ```
 
 ## Project Structure
-
 ```
 Compiler-Project-1                                 
 ├─ .clang-format                                   
