@@ -186,7 +186,8 @@ endif()
 function(add_while_program PROGRAM_NAME)
     set(WHILE_FILE "${PROJECT_SOURCE_DIR}/examples/while/${PROGRAM_NAME}.while")
     set(ASM_FILE "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}.s")
-    set(OUTPUT_EXEC "${CMAKE_BINARY_DIR}/run_${PROGRAM_NAME}")
+    set(C_FILE "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}.c")
+    set(RISCV_EXEC "${CMAKE_BINARY_DIR}/run_${PROGRAM_NAME}")
     
     # Custom command to generate assembly from WHILE code
     add_custom_command(
@@ -199,15 +200,28 @@ function(add_while_program PROGRAM_NAME)
     
     # Custom command to build the RISC-V executable
     add_custom_command(
-        OUTPUT ${OUTPUT_EXEC}
+        OUTPUT ${RISCV_EXEC}
         COMMAND riscv64-linux-gnu-gcc ${ASM_FILE} ${PROJECT_SOURCE_DIR}/src/main.c 
-                -DPROGRAM_NAME=${PROGRAM_NAME} -o ${OUTPUT_EXEC} -static
+                -DPROGRAM_NAME=${PROGRAM_NAME} -o ${RISCV_EXEC} -static
         DEPENDS ${ASM_FILE} ${PROJECT_SOURCE_DIR}/src/main.c
         COMMENT "Linking ${PROGRAM_NAME} with RISC-V toolchain"
     )
     
-    # Create a custom target for this program
-    add_custom_target(${PROGRAM_NAME} ALL DEPENDS ${OUTPUT_EXEC})
+    # Custom command to generate C code from WHILE code
+    add_custom_command(
+        OUTPUT ${C_FILE}
+        COMMAND cgen ${WHILE_FILE} > ${C_FILE}
+        DEPENDS ${WHILE_FILE}
+        DEPENDS cgen
+        COMMENT "Generating C code for ${PROGRAM_NAME}.while"
+    )
+    
+    # Create C executable from generated C code
+    add_executable(${PROGRAM_NAME}_c ${C_FILE} src/main.c)
+    target_compile_definitions(${PROGRAM_NAME}_c PRIVATE PROGRAM_NAME=${PROGRAM_NAME})
+    
+    # Create custom target that depends on BOTH versions
+    add_custom_target(${PROGRAM_NAME} ALL DEPENDS ${RISCV_EXEC} ${PROGRAM_NAME}_c)
 endfunction()
 
 add_while_program(fibonacci)
