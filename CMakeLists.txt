@@ -186,7 +186,7 @@ endif()
 function(add_while_program PROGRAM_NAME)
     set(WHILE_FILE "${PROJECT_SOURCE_DIR}/examples/while/${PROGRAM_NAME}.while")
     set(ASM_FILE "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}.s")
-    set(OUTPUT_EXEC "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}")
+    set(OUTPUT_EXEC "${CMAKE_BINARY_DIR}/run_${PROGRAM_NAME}")
     
     # Custom command to generate assembly from WHILE code
     add_custom_command(
@@ -201,7 +201,7 @@ function(add_while_program PROGRAM_NAME)
     add_custom_command(
         OUTPUT ${OUTPUT_EXEC}
         COMMAND riscv64-linux-gnu-gcc ${ASM_FILE} ${PROJECT_SOURCE_DIR}/src/main.c 
-        -DPROGRAM_NAME=${PROGRAM_NAME} -o ${OUTPUT_EXEC} -static
+                -DPROGRAM_NAME=${PROGRAM_NAME} -o ${OUTPUT_EXEC} -static
         DEPENDS ${ASM_FILE} ${PROJECT_SOURCE_DIR}/src/main.c
         COMMENT "Linking ${PROGRAM_NAME} with RISC-V toolchain"
     )
