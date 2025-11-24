@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.15...3.22)
 
 project(
-	"WISC Compiler"
-	VERSION 0.1
-	LANGUAGES CXX
+    "WISC Compiler"
+    VERSION 0.1
+    LANGUAGES C CXX ASM
 )
 
 # Default to release if no build type specified
@@ -182,3 +182,80 @@ if(GIT_FOUND)
         COMMENT "Creating source archive"
     )
 endif()
+
+function(add_while_program PROGRAM_NAME)
+    set(WHILE_FILE "${PROJECT_SOURCE_DIR}/examples/while/${PROGRAM_NAME}.while")
+    set(ASM_FILE "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}.s")
+    set(C_FILE "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}.c")
+    set(RISCV_EXEC "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}_risc")
+    
+    # Custom command to generate assembly from WHILE code
+    add_custom_command(
+        OUTPUT ${ASM_FILE}
+        COMMAND wisc ${WHILE_FILE} -o ${ASM_FILE}
+        DEPENDS ${WHILE_FILE}
+        DEPENDS wisc
+        COMMENT "Compiling ${PROGRAM_NAME}.while to RISC-V assembly"
+    )
+    
+    # Custom command to build the RISC-V executable
+    add_custom_command(
+        OUTPUT ${RISCV_EXEC}
+        COMMAND riscv64-linux-gnu-gcc ${ASM_FILE} ${PROJECT_SOURCE_DIR}/src/main.c 
+                -DPROGRAM_NAME=${PROGRAM_NAME} -o ${RISCV_EXEC} -static
+        DEPENDS ${ASM_FILE} ${PROJECT_SOURCE_DIR}/src/main.c
+        COMMENT "Linking ${PROGRAM_NAME} with RISC-V toolchain"
+    )
+    
+    # Custom command to generate C code from WHILE code
+    add_custom_command(
+        OUTPUT ${C_FILE}
+        COMMAND cgen ${WHILE_FILE} > ${C_FILE}
+        DEPENDS ${WHILE_FILE}
+        DEPENDS cgen
+        COMMENT "Generating C code for ${PROGRAM_NAME}.while"
+    )
+    
+    # Create C executable from generated C code
+    add_executable(${PROGRAM_NAME}_c ${C_FILE} src/main.c)
+    target_compile_definitions(${PROGRAM_NAME}_c PRIVATE PROGRAM_NAME=${PROGRAM_NAME})
+    
+    # Create custom target that depends on BOTH versions
+    add_custom_target(${PROGRAM_NAME} ALL DEPENDS ${RISCV_EXEC} ${PROGRAM_NAME}_c)
+endfunction()
+
+# Uncommented programs currently don't work
+
+add_while_program(add)
+add_while_program(chain_prime)
+add_while_program(closest_prime)
+add_while_program(collatz)
+# add_while_program(comment)
+add_while_program(comparatornetwork_bestknown_for_11)
+add_while_program(countTriangularNumbers)
+add_while_program(factorial)
+add_while_program(fibonacci)
+# add_while_program(isprime)
+add_while_program(loop)
+add_while_program(madprimes)
+add_while_program(primescounter)
+# add_while_program(pseudomatrices)
+# add_while_program(quad2)
+# add_while_program(quadratic)
+add_while_program(stress_factorial)
+add_while_program(stress_gcd_mod)
+add_while_program(stress_gcd_sub)
+add_while_program(stress_prime_count)
+add_while_program(sumfactors)
+# add_while_program(torture)
+
+# Create a target that builds all WHILE programs
+add_custom_target(while_programs
+    DEPENDS add chain_prime closest_prime collatz
+            comparatornetwork_bestknown_for_11 countTriangularNumbers
+            factorial fibonacci loop madprimes primescounter
+            stress_factorial
+            stress_gcd_mod stress_gcd_sub stress_prime_count
+            sumfactors
+    COMMENT "Building all WHILE programs"
+)
