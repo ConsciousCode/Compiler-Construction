@@ -239,24 +239,28 @@ stress_factorial     | 12         | 2m2.220s     | 2m1.850s     | ✓
 Current timing results on different programs.
 Output match compares the c program to the release 2 program to verify correctness.
 
-| Program          | Input | Release 1 (s) | Release 2 (s) | C Time (s) | Output Match |
-|------------------|-------|---------------|---------------|------------|--------------|
-| fibonacci        | 10    | 0.003         | 0.003         | 0.005      | ✓            |
-| fibonacci        | 40    | 0.004         | 0.005         | 0.005      | ✓            |
-| fibonacci        | 80    | 0.004         | 0.003         | 0.004      | ✓            |
-| fibonacci        | 160   | 0.004         | 0.005         | 0.003      | ✓            |
-| factorial        | 3     | 0.005         | 0.011         | 0.004      | ✓            |
-| factorial        | 5     | 0.004         | 0.003         | 0.003      | ✓            |
-| factorial        | 8     | 0.003         | 0.003         | 0.007      | ✓            |
-| factorial        | 13    | 0.004         | 0.003         | 0.003      | ✓            |
-| collatz          | 6     | 0.004         | 0.011         | 0.004      | ✓            |
-| collatz          | 12    | 0.004         | 0.003         | 0.004      | ✓            |
-| collatz          | 27    | 0.003         | 0.003         | 0.003      | ✓            |
-| collatz          | 871   | 0.006         | 0.007         | 0.004      | ✓            |
-| stress_factorial | 8     | 0.004         | 0.011         | 0.006      | ✓            |
-| stress_factorial | 10    | 0.020         | 0.005         | 0.004      | ✓            |
-| stress_factorial | 12    | 2.220         | 0.003         | 0.003      | ✓            |
-| stress_factorial | 14    | 403.417       | 0.003         | 0.003      | ✓            |
+| Program          | Input      | Release 1 (s) | Release 2 (s) | C Time (s) | Output Match |
+|------------------|------------|---------------|---------------|------------|--------------|
+| fibonacci        | 10         | 0.003         | 0.015         | 0.006      | ✓            |
+| fibonacci        | 40         | 0.004         | 0.003         | 0.003      | ✓            |
+| fibonacci        | 80         | 0.004         | 0.003         | 0.003      | ✓            |
+| fibonacci        | 160        | 0.004         | 0.003         | 0.003      | ✓            |
+| factorial        | 3          | 0.005         | 0.011         | 0.005      | ✓            |
+| factorial        | 5          | 0.004         | 0.003         | 0.003      | ✓            |
+| factorial        | 8          | 0.003         | 0.003         | 0.003      | ✓            |
+| factorial        | 13         | 0.004         | 0.004         | 0.003      | ✓            |
+| collatz          | 6          | 0.004         | 0.011         | 0.004      | ✓            |
+| collatz          | 12         | 0.004         | 0.003         | 0.004      | ✓            |
+| collatz          | 27         | 0.003         | 0.003         | 0.003      | ✓            |
+| collatz          | 871        | 0.006         | 0.007         | 0.004      | ✓            |
+| stress_factorial | 8          | 0.004         | 0.013         | 0.004      | ✓            |
+| stress_factorial | 10         | 0.020         | 0.004         | 0.003      | ✓            |
+| stress_factorial | 12         | 2.220         | 0.003         | 0.003      | ✓            |
+| stress_factorial | 14         | 403.417       | 0.004         | 0.005      | ✓            |
+| add              | n/a        | -             | 0.011         | 0.004      | ✓            |
+| closest_prime    | 5          | -             | 0.013         | 0.004      | ✓            |
+| stress_gcd_mod   | 1234567    | -             | 0.013         | 0.004      | ✓            |
+| stress_gcd_sub   | 1234567    | -             | 0.011         | 0.006      | ✓            |
 
 ### Architecture Detection
 
