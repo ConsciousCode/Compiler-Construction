@@ -191,6 +191,79 @@ while [n > 0] do {- 0 -}
 od
 ```
 
+## Benchmark Suite
+
+A benchmark script is provided to test and compare the performance of RISC-V assembly output against the C-generated equivalent programs.
+
+### Running Benchmarks
+```bash
+./scripts/benchmark_while.sh [build_dir]
+```
+
+**Prerequisites:**
+- For non-RISC-V systems: `qemu-user` package must be installed
+- All WHILE programs must be built first (`cmake --build build`)
+
+**Example:**
+```bash
+# Build all programs
+cmake --build build --target while_programs
+
+# Run benchmark suite
+./scripts/benchmark_while.sh build
+```
+
+### Benchmark Output
+
+The script runs a comprehensive test suite covering all example programs with various input values. Output is displayed in a clean table format:
+```
+================================================================================
+                        WHILE Program Benchmark Suite
+================================================================================
+
+Program              | Input      | RISC-V Time  | C Time       | Output Match
+---------------------------------------------------------------------------
+fibonacci            | 10         | 0m0.003s     | 0m0.001s     | ✓
+fibonacci            | 40         | 0m0.004s     | 0m0.001s     | ✓
+factorial            | 5          | 0m0.005s     | 0m0.001s     | ✓
+collatz              | 27         | 0m0.003s     | 0m0.001s     | ✓
+stress_factorial     | 12         | 2m2.220s     | 2m1.850s     | ✓
+...
+```
+
+**Status indicators:**
+- ✓ - Both versions produce identical output
+- ✗ - Output mismatch detected (indicates a potential codegen issue)
+
+## Performance Results
+Current timing results on different programs.
+Output match compares the c program to the release 2 program to verify correctness.
+
+| Program          | Input | Release 1 (s) | Release 2 (s) | C Time (s) | Output Match |
+|------------------|-------|---------------|---------------|------------|--------------|
+| fibonacci        | 10    | 0.003         | 0.003         | 0.005      | ✓            |
+| fibonacci        | 40    | 0.004         | 0.005         | 0.005      | ✓            |
+| fibonacci        | 80    | 0.004         | 0.003         | 0.004      | ✓            |
+| fibonacci        | 160   | 0.004         | 0.005         | 0.003      | ✓            |
+| factorial        | 3     | 0.005         | 0.011         | 0.004      | ✓            |
+| factorial        | 5     | 0.004         | 0.003         | 0.003      | ✓            |
+| factorial        | 8     | 0.003         | 0.003         | 0.007      | ✓            |
+| factorial        | 13    | 0.004         | 0.003         | 0.003      | ✓            |
+| collatz          | 6     | 0.004         | 0.011         | 0.004      | ✓            |
+| collatz          | 12    | 0.004         | 0.003         | 0.004      | ✓            |
+| collatz          | 27    | 0.003         | 0.003         | 0.003      | ✓            |
+| collatz          | 871   | 0.006         | 0.007         | 0.004      | ✓            |
+| stress_factorial | 8     | 0.004         | 0.011         | 0.006      | ✓            |
+| stress_factorial | 10    | 0.020         | 0.005         | 0.004      | ✓            |
+| stress_factorial | 12    | 2.220         | 0.003         | 0.003      | ✓            |
+| stress_factorial | 14    | 403.417       | 0.003         | 0.003      | ✓            |
+
+### Architecture Detection
+
+The benchmark script automatically detects your system architecture:
+- **RISC-V systems**: Runs executables natively
+- **Other architectures**: Uses QEMU user-mode emulation (`qemu-riscv64`)
+
 ## Project Structure
 ```
 Compiler-Project-1                                 
