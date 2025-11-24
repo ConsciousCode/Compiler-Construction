@@ -502,7 +502,7 @@ TEST(ScannerTest, Colon_Error) {
 
 TEST(ScannerTest, Unclosed_Comment_Error) {
     test_file("/scan_error/unclosed_comment.while",
-              {Token{Loc{1, 0, 0}, 46, TokenType::ERROR_COMMENT, 0}});
+              {Token{Loc{1, 0, 0}, 52, TokenType::ERROR_COMMENT, 0}});
 }
 
 TEST(ScannerTest, Int_Alpha_Error) {
