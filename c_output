@@ -1,9 +1,0 @@
-Initial state:
-  var[0] = 1234567
-  var[1] = 7654321
-  var[2] = 0
-
-Final state:
-  var[0] = 0
-  var[1] = 0
-  var[2] = 0
