@@ -178,6 +178,7 @@ int main(int argc, char* argv[]) {
     }
 
     /* Generate Code */
+    /*
     Codegen cg;
     CodegenOutput out_code;
     try {
@@ -186,6 +187,7 @@ int main(int argc, char* argv[]) {
         std::cerr << "Code generation failed: " << e.what() << "\n";
         return 1;
     }
+    */
    
     std::ofstream output_file(output_path);
 
@@ -194,7 +196,8 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    output_file << out_code.riscv;
+    //output_file << out_code.riscv;
+    output_file << cfg::cfg_codegen(g, program_name);
     output_file.close();
 
     return 0;
