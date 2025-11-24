@@ -2,6 +2,8 @@
  * Generate While code from the AST.
  */
 
+#include "whilegen.hpp"
+
 #include "ast.hpp"
 #include "scanner.hpp"
 #include "while_parser.hpp"
@@ -47,11 +49,6 @@ int collect_label(const ast::Cond& cond) {
         },
         cond);
 }
-
-std::string to_while(const ast::Arith& arith);
-std::string to_while(const ast::Cond& cond);
-std::string to_while(const ast::Assign& assign);
-std::string to_while(const ast::Block& block);
 
 std::string to_while(const ast::Expr& expr) {
     std::stringstream code;
@@ -178,6 +175,7 @@ std::string to_while(const ast::Block& block) {
     return code.str();
 }
 
+/*
 int main(int argc, char* argv[]) {
     if (argc < 2) {
         std::cerr << "Usage: " << argv[0] << " <input_file>" << std::endl;
@@ -212,3 +210,4 @@ int main(int argc, char* argv[]) {
 
     std::cout << to_while(*pt->to_ast().get_root());
 }
+*/
