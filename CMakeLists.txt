@@ -104,7 +104,7 @@ add_executable(
     scanner_test
     src/scanner.cpp
     src/token.cpp
-    src/scanner_test.cpp
+    src/tests/scanner_test.cpp
 )
 
 add_executable(
@@ -137,7 +137,7 @@ add_executable(
 ]]
 
 target_compile_definitions(scanner_test PRIVATE
-    EXAMPLES_DIR="${CMAKE_SOURCE_DIR}/examples"
+    EXAMPLES_DIR="${CMAKE_SOURCE_DIR}/examples/while"
 )
 
 target_link_libraries(
