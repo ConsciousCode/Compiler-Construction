@@ -174,9 +174,9 @@ find_package(Git QUIET)
 
 if(GIT_FOUND)
     add_custom_target(source-archive
-        COMMAND ${GIT_EXECUTABLE} archive --format=tar.gz 
+        COMMAND ${GIT_EXECUTABLE} archive --format=tar 
                 --prefix=${PROJECT_NAME}-${PROJECT_VERSION}/ 
-                -o ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${PROJECT_VERSION}.tar.gz 
+                -o ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${PROJECT_VERSION}.tar 
                 HEAD
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         COMMENT "Creating source archive"
