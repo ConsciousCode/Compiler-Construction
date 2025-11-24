@@ -129,9 +129,10 @@ size_t viz_expr(const Expr& e, std::ostream& os, size_t nid) {
 }
 
 size_t viz_logical(const Logical& l, std::ostream& os, size_t nid) {
-    size_t parent_nid = nid;  
-    
-    os << ind << L{parent_nid, std::string(op_str(l.op)) + "\\n" + std::to_string(l.get_label())} << "\n";
+    size_t parent_nid = nid;
+
+    os << ind << L{parent_nid, std::string(op_str(l.op)) + "\\n" + std::to_string(l.get_label())}
+       << "\n";
 
     size_t left_nid = nid + 1;
     os << ind << Edge{parent_nid, left_nid};
@@ -139,7 +140,7 @@ size_t viz_logical(const Logical& l, std::ostream& os, size_t nid) {
 
     size_t right_nid = nid + 1;
     os << ind << Edge{parent_nid, right_nid};
-    nid = viz_cond(l.right, os, right_nid); 
+    nid = viz_cond(l.right, os, right_nid);
 
     return nid;
 }
