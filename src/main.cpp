@@ -15,15 +15,12 @@
 #include <string>
 #include <vector>
 
-
 int main(int argc, char* argv[]) {
     argparse::ArgumentParser prog("wisc");
 
     /* Core Compiler Args */
     prog.add_argument("input").help("Input file");
-    prog.add_argument("-o", "--output")
-        .help("Output file for Assembly")
-        .default_value("out.s");
+    prog.add_argument("-o", "--output").help("Output file for Assembly").default_value("out.s");
 
     /* Print Scanner Tokens*/
     prog.add_argument("-pt", "--print-tokens")
@@ -31,17 +28,13 @@ int main(int argc, char* argv[]) {
         .flag();
 
     /* Parse Tree */
-    prog.add_argument("-ppt", "--print-parse-tree")
-        .help("Print the parse tree")
-        .flag();
+    prog.add_argument("-ppt", "--print-parse-tree").help("Print the parse tree").flag();
     prog.add_argument("-gpt", "--graph-parse-tree")
         .help("Graph the parse tree to a dot file.")
         .default_value(std::string("parse_tree.dot"));
 
     /* AST Output */
-    prog.add_argument("-pa", "--print-ast")
-        .help("Print the abstract syntax tree")
-        .flag();
+    prog.add_argument("-pa", "--print-ast").help("Print the abstract syntax tree").flag();
     prog.add_argument("-ga", "--graph-ast")
         .help("Graph the abstract syntax tree to a dot file.")
         .default_value(std::string("ast.dot"));
@@ -50,9 +43,7 @@ int main(int argc, char* argv[]) {
     prog.add_argument("-gc", "--graph-cfg")
         .help("Graph the control flow graph to a dot file.")
         .default_value(std::string("cfg.dot"));
-    prog.add_argument("-sv", "--show-cfg-vars")
-        .help("Include used vars in CFG node labels")
-        .flag();
+    prog.add_argument("-sv", "--show-cfg-vars").help("Include used vars in CFG node labels").flag();
 
     try {
         prog.parse_args(argc, argv);
@@ -80,7 +71,6 @@ int main(int argc, char* argv[]) {
     std::filesystem::path cfg_graph_path(prog.get<std::string>("--graph-cfg"));
     const bool SHOW_CFG_VARS = prog.get<bool>("--show-cfg-vars");
 
-
     /* Load and read input file */
     std::ifstream input_file(input_path);
     if (!input_file) {
@@ -98,7 +88,7 @@ int main(int argc, char* argv[]) {
     Scanner s = Scanner(code.c_str());
     Token t = s.next_token();
     while (t.type != TokenType::ERROR_EOF) {
-        if(PRINT_TOKENS) {
+        if (PRINT_TOKENS) {
             std::cout << t << std::endl;
         }
         if (t.is_error()) {
@@ -107,7 +97,7 @@ int main(int argc, char* argv[]) {
         tokens.push_back(t);
         t = s.next_token();
     }
-    if(PRINT_TOKENS){
+    if (PRINT_TOKENS) {
         printf("\n");
     }
 
@@ -155,7 +145,7 @@ int main(int argc, char* argv[]) {
         std::cout.rdbuf(oldbuf);
         ast_dot_file.close();
     }
-    
+
     /* Build the CFG */
     cfg::CFG g;
     try {
@@ -186,7 +176,7 @@ int main(int argc, char* argv[]) {
         std::cerr << "Code generation failed: " << e.what() << "\n";
         return 1;
     }
-   
+
     std::ofstream output_file(output_path);
 
     if (!output_file) {
