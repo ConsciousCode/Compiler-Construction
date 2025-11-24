@@ -211,3 +211,6 @@ function(add_while_program PROGRAM_NAME)
 endfunction()
 
 add_while_program(fibonacci)
+add_while_program(factorial)
+add_while_program(collatz)
+add_while_program(stress_factorial)
