@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.15...3.22)
 
 project(
-	"WISC Compiler"
-	VERSION 0.1
-	LANGUAGES CXX
+    "WISC Compiler"
+    VERSION 0.1
+    LANGUAGES C CXX ASM
 )
 
 # Default to release if no build type specified
@@ -182,3 +182,32 @@ if(GIT_FOUND)
         COMMENT "Creating source archive"
     )
 endif()
+
+function(add_while_program PROGRAM_NAME)
+    set(WHILE_FILE "${PROJECT_SOURCE_DIR}/examples/while/${PROGRAM_NAME}.while")
+    set(ASM_FILE "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}.s")
+    set(OUTPUT_EXEC "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}")
+    
+    # Custom command to generate assembly from WHILE code
+    add_custom_command(
+        OUTPUT ${ASM_FILE}
+        COMMAND wisc ${WHILE_FILE} -o ${ASM_FILE}
+        DEPENDS ${WHILE_FILE}
+        DEPENDS wisc
+        COMMENT "Compiling ${PROGRAM_NAME}.while to RISC-V assembly"
+    )
+    
+    # Custom command to build the RISC-V executable
+    add_custom_command(
+        OUTPUT ${OUTPUT_EXEC}
+        COMMAND riscv64-linux-gnu-gcc ${ASM_FILE} ${PROJECT_SOURCE_DIR}/src/main.c 
+        -DPROGRAM_NAME=${PROGRAM_NAME} -o ${OUTPUT_EXEC} -static
+        DEPENDS ${ASM_FILE} ${PROJECT_SOURCE_DIR}/src/main.c
+        COMMENT "Linking ${PROGRAM_NAME} with RISC-V toolchain"
+    )
+    
+    # Create a custom target for this program
+    add_custom_target(${PROGRAM_NAME} ALL DEPENDS ${OUTPUT_EXEC})
+endfunction()
+
+add_while_program(fibonacci)
