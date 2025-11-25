@@ -323,28 +323,31 @@ struct CFG_Codegen {
 
         case cfg::BlockKind::Condition: {
             const auto* cblock = (cfg::ConditionBlock*)block;
-            assert(cblock->succs.size() == 2);
+            // Still pretty sure this is right at least...
+            assert(cblock->succs.size() > 0);
 
             emit_comm("if " + to_while(cblock->cond), false);
 
             emit_label(build_label(block->id, "L_cond"));
 
-            auto* bt = cblock->succs[0];
-            auto* bf = cblock->succs[1];
+            cfg::CFGBlock *bt = cblock->succs[0], *bf = nullptr;
+            std::string
+                Ltrue = build_label(bt->id, "L_true"),
+                Lfalse = "L_return";
+            if(cblock->succs.size() > 1) {
+                bf = cblock->succs[1];
+                Lfalse = build_label(bf->id, "L_false");
+            }
 
-            auto Ltrue = build_label(bt->id, "L_true");
-            auto Lfalse = build_label(bf->id, "L_false");
             emit_cond(cblock->cond, Ltrue, Lfalse);
 
             if (!seen(bt)) {
                 emit_comm("then", false);
-                // emit_label(Ltrue);
                 emit_block(bt);
             }
 
-            if (!seen(bf)) {
+            if (bf && !seen(bf)) {
                 emit_comm("else", false);
-                // emit_label(Lfalse);
                 emit_block(bf);
             }
             break;
