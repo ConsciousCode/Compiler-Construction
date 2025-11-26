@@ -175,7 +175,7 @@ std::string to_c(std::string entry, const ast::Block& block) {
     for (const auto& var : vars) {
         if (index > 0)
             code << ", ";
-        code << var << " = vars[" << index << "]";
+        code << mangle(var) << " = vars[" << index << "]";
         ++index;
     }
     code << ";\n";
@@ -186,7 +186,7 @@ std::string to_c(std::string entry, const ast::Block& block) {
     // Store local variables
     index = 0;
     for (const auto& var : vars) {
-        code << "    vars[" << index << "] = " << var << ";\n";
+        code << "    vars[" << index << "] = " << mangle(var) << ";\n";
         ++index;
     }
 
