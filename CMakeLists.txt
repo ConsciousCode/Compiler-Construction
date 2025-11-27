@@ -20,6 +20,9 @@ set(COMMON_FLAGS "-Wall -Wextra -Werror -fno-rtti")
 set(CMAKE_CXX_FLAGS_DEBUG   "${COMMON_FLAGS} -g")
 set(CMAKE_CXX_FLAGS_RELEASE "${COMMON_FLAGS} -O3 -DNDEBUG")
 
+# Prevent cmake from refetching already downloaded content
+set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
+
 include(FetchContent)
 FetchContent_Declare(
   googletest
