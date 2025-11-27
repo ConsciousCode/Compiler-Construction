@@ -221,6 +221,9 @@ function(add_while_program PROGRAM_NAME)
         DEPENDS cgen
         COMMENT "Generating C code for ${PROGRAM_NAME}.while"
     )
+
+    # Create RISC-V Target
+    add_custom_target(${PROGRAM_NAME}_risc  DEPENDS ${RISCV_EXEC})
     
     # Create C executable from generated C code
     add_executable(${PROGRAM_NAME}_c ${C_FILE} src/main.c)
