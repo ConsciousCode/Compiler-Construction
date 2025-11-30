@@ -53,11 +53,14 @@ class Arith : public ASTNode {
         return "(" + ast::to_c(left) + ")" + to_c(op) + "(" + ast::to_c(right) + ")";
     }
 
-    static std::string to_c(const Op op){
+    static std::string to_c(const Op op) {
         switch (op) {
-            case Op::ADD: return "+";
-            case Op::SUB: return "-";
-            case Op::MUL: return "*";
+        case Op::ADD:
+            return "+";
+        case Op::SUB:
+            return "-";
+        case Op::MUL:
+            return "*";
         }
         throw std::runtime_error("Attempted to convert unknown arithmetic operation to c.");
     }
@@ -79,8 +82,8 @@ class BoolConst : public LabeledNode {
         return Cond{std::make_shared<BoolConst>(v, label)};
     }
 
-    std::string to_c() const override{
-        return value ? "true" : "false"; 
+    std::string to_c() const override {
+        return value ? "true" : "false";
     }
 };
 
@@ -119,9 +122,11 @@ class Logical : public LabeledNode {
     }
 
     static std::string to_c(const Op op) {
-        switch(op){
-            case Op::AND: return "&&";
-            case Op::OR: return "||";
+        switch (op) {
+        case Op::AND:
+            return "&&";
+        case Op::OR:
+            return "||";
         }
         throw std::runtime_error("Attempted to convert unknown logical operation to c.");
     }
@@ -147,16 +152,20 @@ class Comparison : public LabeledNode {
     }
 
     static std::string to_c(const Op op) {
-        switch(op){
-            case Op::EQ: return "==";
-            case Op::LT: return "<";
-            case Op::LE: return "<=";
-            case Op::GT: return ">";
-            case Op::GE: return ">=";
+        switch (op) {
+        case Op::EQ:
+            return "==";
+        case Op::LT:
+            return "<";
+        case Op::LE:
+            return "<=";
+        case Op::GT:
+            return ">";
+        case Op::GE:
+            return ">=";
         }
         throw std::runtime_error("Attempted to convert unknown comparison operation to c.");
     }
-
 };
 
 class Assign : public LabeledNode {
@@ -171,7 +180,7 @@ class Assign : public LabeledNode {
         : Assign(std::move(ident), Expr{std::string{s}}, l) {}
     Assign(std::string ident, std::string s, size_t l = -1)
         : Assign(std::move(ident), Expr{std::move(s)}, l) {}
-    
+
     std::string to_c() const override {
         return name + "=" + ast::to_c(value) + ";";
     }
