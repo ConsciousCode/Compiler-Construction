@@ -48,7 +48,7 @@ class Arith : public ASTNode {
     }
 
     std::string to_c() const override {
-        return ast::to_c(left) + to_c(op) + ast::to_c(right);
+        return "(" + ast::to_c(left) + ")" + to_c(op) + "(" + ast::to_c(right) + ")";
     }
 
     static std::string to_c(const Op op){
@@ -112,8 +112,8 @@ class Logical : public LabeledNode {
         return Cond{std::make_shared<Logical>(op, std::move(l), std::move(r), label)};
     }
 
-    std::string to_c() const {
-        return "(" + ast::to_c(left) + to_c(op) + ast::to_c(right);
+    std::string to_c() const override {
+        return "(" + ast::to_c(left) + ")" + to_c(op) + "(" + ast::to_c(right) + ")";
     }
 
     static std::string to_c(const Op op) {
@@ -139,6 +139,22 @@ class Comparison : public LabeledNode {
     static Cond make(Op op, Expr l, Expr r, size_t label = -1) {
         return Cond{std::make_shared<Comparison>(op, std::move(l), std::move(r), label)};
     }
+
+    std::string to_c() const override {
+        return "(" + ast::to_c(left) + ")" + to_c(op) + "(" + ast::to_c(right) + ")";
+    }
+
+    static std::string to_c(const Op op) {
+        switch(op){
+            case Op::EQ: return "==";
+            case Op::LT: return "<";
+            case Op::LE: return "<=";
+            case Op::GT: return ">";
+            case Op::GE: return ">=";
+        }
+        throw std::runtime_error("Attempted to convert unknown comparison operation to c.");
+    }
+
 };
 
 class Assign : public LabeledNode {
