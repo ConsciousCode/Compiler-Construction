@@ -15,4 +15,6 @@ std::string to_c(const ast::Expr& expr) {
         }, expr);
 }
 
-
+std::string to_c(const ast::Cond& cond) {
+    return std::visit([](auto&& c) { return c->to_c(); }, cond);
+}
