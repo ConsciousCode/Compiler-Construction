@@ -1,7 +1,14 @@
 #include "ast.hpp"
 
+#include "cgen.hpp"
+#include "collect_vars.hpp"
+
+#include <string>
+
+namespace ast {
 std::string to_c(const ast::Expr& expr) {
-        return std::visit([](auto&& e) -> std::string {
+    return std::visit(
+        [](auto&& e) -> std::string {
             using T = std::decay_t<decltype(e)>;
             if constexpr (std::is_same_v<T, int>)
                 return std::to_string(e);
@@ -33,12 +40,38 @@ std::string ast::Block::to_c() const {
 }
 
 std::string ast::If::to_c() const {
-    return "if (" + ast::to_c(cond) + "){\n"
-        + then.to_c() + "}\n"
-        + "else {\n" + el.to_c() + "}\n"; 
+    return "if (" + ast::to_c(cond) + "){\n" + then.to_c() + "}\n" + "else {\n" + el.to_c() + "}\n";
 }
 
 std::string ast::While::to_c() const {
-    return "while (" + ast::to_c(cond) + "){\n"
-        + body.to_c() + "}\n";
+    return "while (" + ast::to_c(cond) + "){\n" + body.to_c() + "}\n";
 }
+
+std::string ast::AST::to_c(const std::string& prog_name) const {
+    std::set<std::string> vars;
+    collect_vars(*root, vars);
+
+    std::string result =
+        "#include <stdint.h>\nvoid" + prog_name + "(int64_t vars[]) {\n" + "    int64_t ";
+
+    int index = 0;
+    for (const auto& var : vars) {
+        if (index > 0)
+            result += ", ";
+        result += cgen::mangle(var) + " = vars[" + std::to_string(index) + "]";
+        ++index;
+    }
+    result += ";\n";
+
+    for (const Cmd& cmd : root->cmds) {
+        result += ast::to_c(cmd);
+    }
+
+    result += "}\n";
+
+    return result;
+}
+
+ast::Skip::~Skip() = default;
+
+} // namespace ast

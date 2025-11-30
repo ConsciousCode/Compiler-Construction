@@ -1,5 +1,7 @@
 #pragma once
 
+#include "cgen.hpp"
+
 #include <cstdlib>
 #include <memory>
 #include <stdexcept>
@@ -180,6 +182,7 @@ class While;
 class Skip : public LabeledNode {
   public:
     Skip() = default;
+    ~Skip();
     Skip(int l) : LabeledNode(l){};
     std::string to_c() const override;
 };
@@ -239,6 +242,8 @@ class AST {
     std::shared_ptr<class Block> get_root() const {
         return root;
     }
+
+    std::string to_c(const std::string& prog_name) const;
 
   private:
     std::shared_ptr<class Block> root;
