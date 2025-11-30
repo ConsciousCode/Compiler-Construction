@@ -36,7 +36,10 @@ int main(int argc, char* argv[]) {
     prog.add_argument("input").help("Input file");
     prog.add_argument("-o", "--output").help("Output file for Assembly").default_value("out.s");
     prog.add_argument("-cc", "--c-code")
-        .help("Generate equivalent c code, specifying source")
+        .help("Generate equivalent c code")
+        .flag();
+    prog.add_argument("--c-source")
+        .help("C code generation source")
         .default_value(std::string{"ast"})
         .choices("ast", "cfg");
 
@@ -76,7 +79,7 @@ int main(int argc, char* argv[]) {
     std::filesystem::path output_path(prog.get<std::string>("--output"));
 
     const bool GEN_C_CODE = prog.is_used("--c-code");
-    const C_GEN_SOURCE C_SOURCE(stringToCGenSource(prog.get<std::string>("--c-code")));
+    const C_GEN_SOURCE C_SOURCE(stringToCGenSource(prog.get<std::string>("--c-source")));
     std::filesystem::path c_code_path("out.c");
 
     const bool PRINT_TOKENS = prog.get<bool>("--print-tokens");
