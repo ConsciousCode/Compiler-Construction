@@ -112,7 +112,9 @@ add_executable(
 
 add_executable(
     cgen
+    src/cgen_main.cpp
     src/cgen.cpp
+    src/ast.cpp
     src/collect_vars.cpp
 
     # Parser + scanner
