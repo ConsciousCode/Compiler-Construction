@@ -22,6 +22,10 @@ class LabeledNode : public ASTNode {
         return label;
     }
 
+    std::string label_as_c_commment() const {
+        return "/*[" + std::to_string(label) + "]*/";
+    }
+
   private:
     size_t label;
 };
@@ -66,6 +70,7 @@ class Comparison;
 class BoolConst;
 using Cond = std::variant<std::shared_ptr<BoolConst>, std::shared_ptr<Not>,
                           std::shared_ptr<Logical>, std::shared_ptr<Comparison>>;
+std::string to_c(Cond cond);
 
 class BoolConst : public LabeledNode {
   public:
@@ -73,6 +78,10 @@ class BoolConst : public LabeledNode {
     BoolConst(bool v, size_t l) : LabeledNode(l), value(v){};
     static Cond make(bool v, size_t label) {
         return Cond{std::make_shared<BoolConst>(v, label)};
+    }
+
+    std::string to_c() const {
+        return std::to_string(value) + " " + label_as_c_commment(); 
     }
 };
 
