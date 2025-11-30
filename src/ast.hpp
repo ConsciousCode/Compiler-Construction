@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cstdlib>
-#include <iostream>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <variant>
 #include <vector>
@@ -11,6 +11,8 @@ namespace ast {
 
 class ASTNode {
   public:
+    virtual std::string to_c() const = 0;
+    virtual ~ASTNode() {}
 };
 
 class LabeledNode : public ASTNode {
@@ -22,17 +24,13 @@ class LabeledNode : public ASTNode {
         return label;
     }
 
-    std::string label_as_c_commment() const {
-        return "/*[" + std::to_string(label) + "]*/";
-    }
-
   private:
     size_t label;
 };
 
 class Arith;
 using Expr = std::variant<int, std::string, std::shared_ptr<Arith>>;
-std::string expr_to_c(const ast::Expr& expr);
+std::string to_c(const ast::Expr& expr);
 
 class Arith : public ASTNode {
 
@@ -49,18 +47,17 @@ class Arith : public ASTNode {
         return Expr{std::make_shared<Arith>(op, std::move(l), std::move(r))};
     }
 
-    const std::string to_c(){
-        return expr_to_c(left) + op_to_string(op) + expr_to_c(right);
+    std::string to_c() const override {
+        return ast::to_c(left) + to_c(op) + ast::to_c(right);
     }
 
-    static std::string op_to_string(const Op op){
+    static std::string to_c(const Op op){
         switch (op) {
             case Op::ADD: return "+";
             case Op::SUB: return "-";
             case Op::MUL: return "*";
         }
-        std::cerr << "Unexpected Operation encountered in op_to_string()" << std::endl;
-        std::abort();
+        throw std::runtime_error("Attempted to convert unknown arithmetic operation to c.");
     }
 };
 
@@ -80,8 +77,8 @@ class BoolConst : public LabeledNode {
         return Cond{std::make_shared<BoolConst>(v, label)};
     }
 
-    std::string to_c() const {
-        return std::to_string(value) + " " + label_as_c_commment(); 
+    std::string to_c() const override{
+        return value ? "true" : "false"; 
     }
 };
 
@@ -93,6 +90,10 @@ class Not : public LabeledNode {
 
     static Cond make(Cond c, size_t label) {
         return Cond{std::make_shared<Not>(std::move(c), label)};
+    }
+
+    std::string to_c() const {
+        return "!(" + ast::to_c(cond) + ")";
     }
 };
 
@@ -109,6 +110,18 @@ class Logical : public LabeledNode {
 
     static Cond make(Op op, Cond l, Cond r, size_t label) {
         return Cond{std::make_shared<Logical>(op, std::move(l), std::move(r), label)};
+    }
+
+    std::string to_c() const {
+        return "(" + ast::to_c(left) + to_c(op) + ast::to_c(right);
+    }
+
+    static std::string to_c(const Op op) {
+        switch(op){
+            case Op::AND: return "&&";
+            case Op::OR: return "||";
+        }
+        throw std::runtime_error("Attempted to convert unknown logical operation to c.");
     }
 };
 
