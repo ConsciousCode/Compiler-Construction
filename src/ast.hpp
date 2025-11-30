@@ -67,7 +67,7 @@ class Comparison;
 class BoolConst;
 using Cond = std::variant<std::shared_ptr<BoolConst>, std::shared_ptr<Not>,
                           std::shared_ptr<Logical>, std::shared_ptr<Comparison>>;
-std::string to_c(Cond cond);
+std::string to_c(const Cond& cond);
 
 class BoolConst : public LabeledNode {
   public:
@@ -169,6 +169,10 @@ class Assign : public LabeledNode {
         : Assign(std::move(ident), Expr{std::string{s}}, l) {}
     Assign(std::string ident, std::string s, size_t l = -1)
         : Assign(std::move(ident), Expr{std::move(s)}, l) {}
+    
+    std::string to_c() const override {
+        return name + "=" + ast::to_c(value) + ";";
+    }
 };
 
 class If;
@@ -177,8 +181,10 @@ class Skip : public LabeledNode {
   public:
     Skip() = default;
     Skip(int l) : LabeledNode(l){};
+    std::string to_c() const override;
 };
 using Cmd = std::variant<Assign, If, While, Skip>;
+std::string to_c(const Cmd& cmd);
 
 class Block : public ASTNode {
   public:
@@ -192,6 +198,8 @@ class Block : public ASTNode {
         cmds.reserve(sizeof...(ts));
         (cmds.emplace_back(std::forward<Ts>(ts)), ...);
     }
+
+    std::string to_c() const override;
 };
 
 class If : public ASTNode {
@@ -201,6 +209,8 @@ class If : public ASTNode {
     Block el;
 
     If(Cond c, Block t, Block e) : cond(std::move(c)), then(std::move(t)), el(std::move(e)){};
+
+    std::string to_c() const override;
 };
 
 class While : public ASTNode {
@@ -209,6 +219,8 @@ class While : public ASTNode {
     Block body;
 
     While(Cond c, Block b) : cond(std::move(c)), body(std::move(b)){};
+
+    std::string to_c() const override;
 };
 
 /**
