@@ -26,7 +26,6 @@ class LabeledNode : public ASTNode {
 
 class Arith;
 using Expr = std::variant<int, std::string, std::shared_ptr<Arith>>;
-std::string expr_to_c(const Expr& expr);
 
 class Arith : public ASTNode {
 
@@ -42,20 +41,6 @@ class Arith : public ASTNode {
     static Expr make(Op op, Expr l, Expr r) {
         return Expr{std::make_shared<Arith>(op, std::move(l), std::move(r))};
     }
-
-    std::string to_c() const {
-        return expr_to_c(left) + op_to_string(op) + expr_to_c(right);
-    }
-
-    static std::string op_to_string(Op op){
-        switch (op) {
-            case Op::ADD: return "+";
-            case Op::SUB: return "-";
-            case Op::MUL: return "*";
-        }
-        return "";
-    }
-
 };
 
 class Not;
