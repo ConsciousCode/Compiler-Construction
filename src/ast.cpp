@@ -16,23 +16,28 @@ std::string to_c(const ast::Expr& expr) {
                 return e;
             else if constexpr (std::is_same_v<T, std::shared_ptr<ast::Arith>>)
                 return e->to_c();
-            else{
+            else {
                 throw std::runtime_error("Attempted to convert unkown Arithmetic Expression to c.");
             }
-        }, expr);
+        },
+        expr);
 }
 
 std::string to_c(const ast::Cond& cond) {
     return std::visit([](auto&& c) { return c->to_c(); }, cond);
 }
 
-std::string ast::to_c(const ast::Cmd& cmd){
+std::string to_c(const ast::Cmd& cmd) {
     return std::visit([](auto&& c) { return c.to_c(); }, cmd);
+}
+
+std::string ast::Skip::to_c() const {
+    return "";
 }
 
 std::string ast::Block::to_c() const {
     std::string result = "";
-    for(const Cmd& cmd : cmds){
+    for (const Cmd& cmd : cmds) {
         result += ast::to_c(cmd);
         result += "\n";
     }
