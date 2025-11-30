@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdlib>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <variant>
@@ -26,6 +28,7 @@ class LabeledNode : public ASTNode {
 
 class Arith;
 using Expr = std::variant<int, std::string, std::shared_ptr<Arith>>;
+std::string expr_to_c(const ast::Expr& expr);
 
 class Arith : public ASTNode {
 
@@ -40,6 +43,20 @@ class Arith : public ASTNode {
 
     static Expr make(Op op, Expr l, Expr r) {
         return Expr{std::make_shared<Arith>(op, std::move(l), std::move(r))};
+    }
+
+    const std::string to_c(){
+        return expr_to_c(left) + op_to_string(op) + expr_to_c(right);
+    }
+
+    static std::string op_to_string(const Op op){
+        switch (op) {
+            case Op::ADD: return "+";
+            case Op::SUB: return "-";
+            case Op::MUL: return "*";
+        }
+        std::cerr << "Unexpected Operation encountered in op_to_string()" << std::endl;
+        std::abort();
     }
 };
 

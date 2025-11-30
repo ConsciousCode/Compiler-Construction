@@ -8,9 +8,12 @@ std::string expr_to_c(const ast::Expr& expr) {
             else if constexpr (std::is_same_v<T, std::string>)
                 return e;
             else if constexpr (std::is_same_v<T, std::shared_ptr<ast::Arith>>)
-                return e->to_c();  // Recursively call to_c on the pointed-to Arith
-            else
-                static_assert(false, "non-exhaustive visitor!");
+                return e->to_c();
+            else{
+                std::cerr << "Unexpected expression encountered when converting to c"<< std::endl;
+                std::abort();
+            }
+                
         }, expr);
 }
 
