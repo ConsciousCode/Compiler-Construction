@@ -162,6 +162,7 @@ std::string to_c_inner(const ast::Block& block) {
 
 std::string to_c(std::string entry, const ast::Block& block) {
     std::set<std::string> vars;
+    int index;
     collect_vars(block, vars);
 
     std::stringstream code;
@@ -169,16 +170,18 @@ std::string to_c(std::string entry, const ast::Block& block) {
     code << "void " << entry << "(int64_t vars[]) {\n";
 
     // Load local variables
-    code << "    int64_t ";
+    if(vars.size() > 0) {
+        code << "    int64_t ";
 
-    int index = 0;
-    for (const auto& var : vars) {
-        if (index > 0)
-            code << ", ";
-        code << mangle(var) << " = vars[" << index << "]";
-        ++index;
+        index = 0;
+        for (const auto& var : vars) {
+            if (index > 0)
+                code << ", ";
+            code << mangle(var) << " = vars[" << index << "]";
+            ++index;
+        }
+        code << ";\n";
     }
-    code << ";\n";
 
     // Code
     code << indent(to_c_inner(block)) << "\n";
