@@ -236,7 +236,7 @@ add_while_program(closest_prime)
 add_while_program(collatz)
 # add_while_program(comment) # Parse error at Segmentation fault
 # add_while_program(comparatornetwork_bestknown_for_11) # Register overflow
-# add_while_program(countTriangularNumbers) # Register overflow
+add_while_program(countTriangularNumbers) # Register overflow
 add_while_program(factorial)
 add_while_program(fibonacci)
 add_while_program(isprime)
@@ -251,7 +251,7 @@ add_while_program(stress_gcd_mod)
 add_while_program(stress_gcd_sub)
 add_while_program(stress_prime_count)
 add_while_program(sumfactors)
-add_while_program(torture)
+# add_while_program(torture) # Register overflow
 
 # Automatically create a target that builds all WHILE programs
 get_property(ALL_WHILE_PROGRAMS GLOBAL PROPERTY WHILE_PROGRAMS_LIST)
