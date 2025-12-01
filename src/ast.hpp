@@ -49,9 +49,7 @@ class Arith : public ASTNode {
         return Expr{std::make_shared<Arith>(op, std::move(l), std::move(r))};
     }
 
-    std::string to_c() const override {
-        return "(" + ast::to_c(left) + ")" + to_c(op) + "(" + ast::to_c(right) + ")";
-    }
+    std::string to_c() const override;
 
     static std::string to_c(const Op op) {
         switch (op) {
@@ -82,9 +80,7 @@ class BoolConst : public LabeledNode {
         return Cond{std::make_shared<BoolConst>(v, label)};
     }
 
-    std::string to_c() const override {
-        return value ? "true" : "false";
-    }
+    std::string to_c() const override;
 };
 
 class Not : public LabeledNode {
@@ -97,9 +93,8 @@ class Not : public LabeledNode {
         return Cond{std::make_shared<Not>(std::move(c), label)};
     }
 
-    std::string to_c() const {
-        return "!(" + ast::to_c(cond) + ")";
-    }
+    std::string to_c() const override;
+
 };
 
 class Logical : public LabeledNode {
@@ -117,9 +112,7 @@ class Logical : public LabeledNode {
         return Cond{std::make_shared<Logical>(op, std::move(l), std::move(r), label)};
     }
 
-    std::string to_c() const override {
-        return "(" + ast::to_c(left) + ")" + to_c(op) + "(" + ast::to_c(right) + ")";
-    }
+    std::string to_c() const override;
 
     static std::string to_c(const Op op) {
         switch (op) {
@@ -147,9 +140,7 @@ class Comparison : public LabeledNode {
         return Cond{std::make_shared<Comparison>(op, std::move(l), std::move(r), label)};
     }
 
-    std::string to_c() const override {
-        return "(" + ast::to_c(left) + ")" + to_c(op) + "(" + ast::to_c(right) + ")";
-    }
+    std::string to_c() const override;
 
     static std::string to_c(const Op op) {
         switch (op) {
@@ -181,9 +172,8 @@ class Assign : public LabeledNode {
     Assign(std::string ident, std::string s, size_t l = -1)
         : Assign(std::move(ident), Expr{std::move(s)}, l) {}
 
-    std::string to_c() const override {
-        return name + "=" + ast::to_c(value) + ";";
-    }
+    std::string to_c() const override;
+
 };
 
 class If;

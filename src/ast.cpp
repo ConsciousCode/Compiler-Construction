@@ -23,6 +23,26 @@ std::string to_c(const ast::Expr& expr) {
         expr);
 }
 
+std::string ast::Arith::to_c() const {
+    return "(" + ast::to_c(left) + to_c(op) + ast::to_c(right) + ")";
+}
+
+std::string ast::BoolConst::to_c() const {
+    return value ? "true" : "false";
+}
+
+std::string ast::Not::to_c() const {
+    return "!" + ast::to_c(cond);
+}
+
+std::string ast::Logical::to_c() const {
+    return "(" + ast::to_c(left) + to_c(op) + ast::to_c(right) + ")";
+}
+
+std::string ast::Comparison::to_c() const {
+    return "(" + ast::to_c(left) + to_c(op) + ast::to_c(right) + ")";
+}
+
 std::string to_c(const ast::Cond& cond) {
     return std::visit([](auto&& c) { return c->to_c(); }, cond);
 }
@@ -33,6 +53,10 @@ std::string to_c(const ast::Cmd& cmd) {
 
 std::string ast::Skip::to_c() const {
     return "";
+}
+
+std::string ast::Assign::to_c() const {
+    return name + "=" + ast::to_c(value) + ";";
 }
 
 std::string ast::Block::to_c() const {
