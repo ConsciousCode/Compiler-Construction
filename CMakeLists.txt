@@ -236,11 +236,17 @@ function(add_while_program PROGRAM_NAME)
     set_property(GLOBAL APPEND PROPERTY WHILE_PROGRAMS_LIST ${PROGRAM_NAME})
 endfunction()
 
+# Empty program edge cases
+# add_while_program(empty) # Parse error at Segmentation fault
+# add_while_program(comment) # Parse error at Segmentation fault
+# add_while_program(skip1) # Segmentation fault
+add_while_program(skip2)
+
+# Normal programs
 add_while_program(add)
 add_while_program(chain_prime)
 add_while_program(closest_prime)
 add_while_program(collatz)
-# add_while_program(comment) # Parse error at Segmentation fault
 # add_while_program(comparatornetwork_bestknown_for_11) # Register overflow
 add_while_program(countTriangularNumbers) # Register overflow
 add_while_program(factorial)
