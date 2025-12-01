@@ -86,7 +86,7 @@ std::string to_c_inner(const ast::Cond& cond) {
         [&code](auto&& arg) {
             using T = std::decay_t<decltype(arg)>;
             if constexpr (std::is_same_v<T, std::shared_ptr<ast::BoolConst>>) {
-                code << (arg->value ? "true" : "false");
+                code << (arg->value ? "1/*true*/" : "0/*false*/");
             } else if constexpr (std::is_same_v<T, std::shared_ptr<ast::Not>>) {
                 code << "!(" << to_c_inner(arg->cond) << ")";
             } else if constexpr (std::is_same_v<T, std::shared_ptr<ast::Logical>>) {

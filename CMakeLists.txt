@@ -251,7 +251,7 @@ add_while_program(stress_gcd_mod)
 add_while_program(stress_gcd_sub)
 add_while_program(stress_prime_count)
 add_while_program(sumfactors)
-# add_while_program(torture) # Parse error 2:13 RBRACK
+add_while_program(torture)
 
 # Automatically create a target that builds all WHILE programs
 get_property(ALL_WHILE_PROGRAMS GLOBAL PROPERTY WHILE_PROGRAMS_LIST)
