@@ -11,9 +11,41 @@
 
 namespace ast {
 
+struct CodeGenContext {
+    int indent_level = 0;
+    int depth = 0;
+
+    CodeGenContext inc_indent() const {
+        return CodeGenContext{indent_level + 1, depth};
+    }
+
+    CodeGenContext inc_depth() const {
+        return CodeGenContext{indent_level, depth + 1};
+    }
+
+    std::string parenthesize(const std::string& code_str) const {
+        return depth == 0 ? code_str : "(" + code_str + ")";
+    }
+
+    CodeGenContext depth_reset() const {
+        return CodeGenContext{indent_level, 0};
+    }
+
+    std::string indent() const {
+        return std::string(indent_level * 4, ' ');
+    }
+
+    /* Multi-line indent */
+    std::string indent(const std::string& str) const {
+        if (indent_level == 0) return str;
+        std::string spaces = std::string(indent_level * 4, ' ');
+        return spaces + cgen::ReplaceAll(str, "\n", "\n" + spaces);
+    }
+};
+
 class ASTNode {
   public:
-    virtual std::string to_c() const = 0;
+    virtual std::string to_c(const CodeGenContext& ctx) const = 0;
     virtual ~ASTNode() {}
 };
 
@@ -32,7 +64,7 @@ class LabeledNode : public ASTNode {
 
 class Arith;
 using Expr = std::variant<int, std::string, std::shared_ptr<Arith>>;
-std::string to_c(const ast::Expr& expr);
+std::string to_c(const ast::Expr& expr, const CodeGenContext& ctx);
 
 class Arith : public ASTNode {
 
@@ -49,7 +81,7 @@ class Arith : public ASTNode {
         return Expr{std::make_shared<Arith>(op, std::move(l), std::move(r))};
     }
 
-    std::string to_c() const override;
+    std::string to_c(const CodeGenContext& ctx) const override;
 
     static std::string to_c(const Op op) {
         switch (op) {
@@ -70,7 +102,7 @@ class Comparison;
 class BoolConst;
 using Cond = std::variant<std::shared_ptr<BoolConst>, std::shared_ptr<Not>,
                           std::shared_ptr<Logical>, std::shared_ptr<Comparison>>;
-std::string to_c(const Cond& cond);
+std::string to_c(const Cond& cond, const CodeGenContext& ctx);
 
 class BoolConst : public LabeledNode {
   public:
@@ -80,7 +112,7 @@ class BoolConst : public LabeledNode {
         return Cond{std::make_shared<BoolConst>(v, label)};
     }
 
-    std::string to_c() const override;
+    std::string to_c(const CodeGenContext& ctx) const override;
 };
 
 class Not : public LabeledNode {
@@ -93,7 +125,7 @@ class Not : public LabeledNode {
         return Cond{std::make_shared<Not>(std::move(c), label)};
     }
 
-    std::string to_c() const override;
+    std::string to_c(const CodeGenContext& ctx) const override;
 
 };
 
@@ -112,7 +144,7 @@ class Logical : public LabeledNode {
         return Cond{std::make_shared<Logical>(op, std::move(l), std::move(r), label)};
     }
 
-    std::string to_c() const override;
+    std::string to_c(const CodeGenContext& ctx) const override;
 
     static std::string to_c(const Op op) {
         switch (op) {
@@ -140,7 +172,7 @@ class Comparison : public LabeledNode {
         return Cond{std::make_shared<Comparison>(op, std::move(l), std::move(r), label)};
     }
 
-    std::string to_c() const override;
+    std::string to_c(const CodeGenContext& ctx) const override;
 
     static std::string to_c(const Op op) {
         switch (op) {
@@ -172,7 +204,7 @@ class Assign : public LabeledNode {
     Assign(std::string ident, std::string s, size_t l = -1)
         : Assign(std::move(ident), Expr{std::move(s)}, l) {}
 
-    std::string to_c() const override;
+    std::string to_c(const CodeGenContext& ctx) const override;
 
 };
 
@@ -183,10 +215,10 @@ class Skip : public LabeledNode {
     Skip() = default;
     ~Skip();
     Skip(int l) : LabeledNode(l){};
-    std::string to_c() const override;
+    std::string to_c(const CodeGenContext& ctx) const override;
 };
 using Cmd = std::variant<Assign, If, While, Skip>;
-std::string to_c(const Cmd& cmd);
+std::string to_c(const Cmd& cmd, const CodeGenContext& ctx);
 
 class Block : public ASTNode {
   public:
@@ -201,7 +233,7 @@ class Block : public ASTNode {
         (cmds.emplace_back(std::forward<Ts>(ts)), ...);
     }
 
-    std::string to_c() const override;
+    std::string to_c(const CodeGenContext& ctx) const override;
 };
 
 class If : public ASTNode {
@@ -212,7 +244,7 @@ class If : public ASTNode {
 
     If(Cond c, Block t, Block e) : cond(std::move(c)), then(std::move(t)), el(std::move(e)){};
 
-    std::string to_c() const override;
+    std::string to_c(const CodeGenContext& ctx) const override;
 };
 
 class While : public ASTNode {
@@ -222,7 +254,7 @@ class While : public ASTNode {
 
     While(Cond c, Block b) : cond(std::move(c)), body(std::move(b)){};
 
-    std::string to_c() const override;
+    std::string to_c(const CodeGenContext& ctx) const override;
 };
 
 /**

@@ -6,16 +6,16 @@
 #include <string>
 
 namespace ast {
-std::string to_c(const ast::Expr& expr) {
+std::string to_c(const ast::Expr& expr, const CodeGenContext& ctx) {
     return std::visit(
-        [](auto&& e) -> std::string {
+        [&ctx](auto&& e) -> std::string {
             using T = std::decay_t<decltype(e)>;
             if constexpr (std::is_same_v<T, int>)
                 return std::to_string(e);
             else if constexpr (std::is_same_v<T, std::string>)
                 return e;
             else if constexpr (std::is_same_v<T, std::shared_ptr<ast::Arith>>)
-                return e->to_c();
+                return e->to_c(ctx);
             else {
                 throw std::runtime_error("Attempted to convert unkown Arithmetic Expression to c.");
             }
@@ -23,57 +23,74 @@ std::string to_c(const ast::Expr& expr) {
         expr);
 }
 
-std::string ast::Arith::to_c() const {
-    return "(" + ast::to_c(left) + to_c(op) + ast::to_c(right) + ")";
+std::string ast::Arith::to_c(const CodeGenContext& ctx) const {
+    std::string code = ast::to_c(left, ctx.inc_depth()) + to_c(op) + ast::to_c(right, ctx.inc_depth());
+
+    return ctx.parenthesize(code);
 }
 
-std::string ast::BoolConst::to_c() const {
-    return value ? "true" : "false";
+std::string ast::BoolConst::to_c([[maybe_unused]] const CodeGenContext& ctx) const {
+    std::string str_value = value ? "true" : "false";
+    return str_value;
 }
 
-std::string ast::Not::to_c() const {
-    return "!" + ast::to_c(cond);
+std::string ast::Not::to_c(const CodeGenContext& ctx) const {
+    return ctx.parenthesize("!" + ast::to_c(cond, ctx.inc_depth()));
 }
 
-std::string ast::Logical::to_c() const {
-    return "(" + ast::to_c(left) + to_c(op) + ast::to_c(right) + ")";
+std::string ast::Logical::to_c(const CodeGenContext& ctx) const {
+    std::string result = ast::to_c(left, ctx.inc_depth()) + to_c(op) + ast::to_c(right, ctx.inc_depth());
+
+    return ctx.parenthesize(result);
 }
 
-std::string ast::Comparison::to_c() const {
-    return "(" + ast::to_c(left) + to_c(op) + ast::to_c(right) + ")";
+std::string ast::Comparison::to_c(const CodeGenContext& ctx) const {
+    std::string result = ast::to_c(left, ctx.inc_depth()) + to_c(op) + ast::to_c(right, ctx.inc_depth());
+
+    return ctx.parenthesize(result);
 }
 
-std::string to_c(const ast::Cond& cond) {
-    return std::visit([](auto&& c) { return c->to_c(); }, cond);
+std::string to_c(const ast::Cond& cond, const CodeGenContext& ctx) {
+    return std::visit([&ctx](auto&& c) { return c->to_c(ctx); }, cond);
 }
 
-std::string to_c(const ast::Cmd& cmd) {
-    return std::visit([](auto&& c) { return c.to_c(); }, cmd);
+std::string to_c(const ast::Cmd& cmd, const CodeGenContext& ctx) {
+    return std::visit([&ctx](auto&& c) { return c.to_c(ctx); }, cmd);
 }
 
-std::string ast::Skip::to_c() const {
-    return "";
+std::string ast::Skip::to_c([[maybe_unused]] const CodeGenContext& ctx) const {
+    return ";";
 }
 
-std::string ast::Assign::to_c() const {
-    return name + "=" + ast::to_c(value) + ";";
+std::string ast::Assign::to_c(const CodeGenContext& ctx) const {
+    std::string result = cgen::mangle(name) + " = " + ast::to_c(value, ctx) + ";";
+    return ctx.indent() + result;
 }
 
-std::string ast::Block::to_c() const {
+std::string ast::Block::to_c(const CodeGenContext& ctx) const {
     std::string result = "";
     for (const Cmd& cmd : cmds) {
-        result += ast::to_c(cmd);
+        result += ast::to_c(cmd, ctx);
         result += "\n";
     }
     return result;
 }
 
-std::string ast::If::to_c() const {
-    return "if (" + ast::to_c(cond) + "){\n" + then.to_c() + "}\n" + "else {\n" + el.to_c() + "}\n";
+std::string ast::If::to_c(const CodeGenContext& ctx) const {
+    std::string result = ctx.indent() + "if (" + ast::to_c(cond, ctx.depth_reset()) + ") {\n"
+       + then.to_c(ctx.inc_indent()) 
+       + ctx.indent() + "}\n" 
+       + ctx.indent() + "else {\n" 
+       + el.to_c(ctx.inc_indent()) 
+       + ctx.indent() + "}\n";
+    return result;
 }
 
-std::string ast::While::to_c() const {
-    return "while (" + ast::to_c(cond) + "){\n" + body.to_c() + "}\n";
+std::string ast::While::to_c(const CodeGenContext& ctx) const {
+    std::string result = ctx.indent() + "while (" + ast::to_c(cond, ctx.depth_reset()) + ") {\n"
+       + body.to_c(ctx.inc_indent()) 
+       + ctx.indent() + "}\n";
+    return result;
 }
 
 std::string ast::AST::to_c(const std::string& prog_name) const {
@@ -81,7 +98,7 @@ std::string ast::AST::to_c(const std::string& prog_name) const {
     collect_vars(*root, vars);
 
     std::string result =
-        "#include <stdint.h>\nvoid" + prog_name + "(int64_t vars[]) {\n" + "    int64_t ";
+        "#include <stdint.h>\nvoid " + prog_name + "(int64_t vars[]) {\n" + "    int64_t ";
 
     int index = 0;
     for (const auto& var : vars) {
@@ -92,8 +109,11 @@ std::string ast::AST::to_c(const std::string& prog_name) const {
     }
     result += ";\n";
 
+    CodeGenContext ctx = {1, 0};
+
     for (const Cmd& cmd : root->cmds) {
-        result += ast::to_c(cmd);
+        result += ast::to_c(cmd, ctx);
+        result += "\n";
     }
 
     result += "}\n";
