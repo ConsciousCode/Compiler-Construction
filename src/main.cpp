@@ -80,7 +80,6 @@ int main(int argc, char* argv[]) {
 
     const bool GEN_C_CODE = prog.is_used("--c-code");
     const C_GEN_SOURCE C_SOURCE(stringToCGenSource(prog.get<std::string>("--c-source")));
-    std::filesystem::path c_code_path("out.c");
 
     const bool PRINT_TOKENS = prog.get<bool>("--print-tokens");
 
@@ -205,7 +204,7 @@ int main(int argc, char* argv[]) {
     */
 
     if (GEN_C_CODE) {
-        std::ofstream c_output_file(c_code_path);
+        std::ofstream c_output_file(output_path);
 
         switch (C_SOURCE) {
         case C_GEN_SOURCE::AST: {
@@ -223,17 +222,18 @@ int main(int argc, char* argv[]) {
 
         c_output_file.close();
     }
+    else{
+        std::ofstream output_file(output_path);
 
-    std::ofstream output_file(output_path);
+        if (!output_file) {
+            std::cerr << "Failed to open assembly output file: " << output_path << "\n";
+            return 1;
+        }
 
-    if (!output_file) {
-        std::cerr << "Failed to open assembly output file: " << output_path << "\n";
-        return 1;
+        // output_file << out_code.riscv;
+        output_file << cfg::cfg_codegen(g, program_name);
+        output_file.close();
     }
-
-    // output_file << out_code.riscv;
-    output_file << cfg::cfg_codegen(g, program_name);
-    output_file.close();
 
     return 0;
 }
