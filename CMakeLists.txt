@@ -239,7 +239,7 @@ add_while_program(collatz)
 # add_while_program(countTriangularNumbers) # Register overflow
 add_while_program(factorial)
 add_while_program(fibonacci)
-# add_while_program(isprime) # Parse error 9:30 unexpected RBRACK
+add_while_program(isprime) # Parse error 9:30 unexpected RBRACK
 add_while_program(loop)
 # add_while_program(madprimes) # Register overflow
 add_while_program(primescounter)

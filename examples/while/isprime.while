@@ -1,17 +1,17 @@
 {-
-    Isprime(n): output 1 if the number is prime, 0 otherwise
-    input: n
+    Isprime(input): output 1 if the number is prime, 0 otherwise
+    input: input
     output: output
 -}
 
 composite := 0;
 i := 2;
-while i < n and not [composite] do
+while i < input and composite = 0 do
     j := 1;
-    while i*j < n do
-        j += 1
+    while i*j < input do
+        j := j + 1
     od;
-    if i*j = n then
+    if i*j = input then
         composite := 1
     else
         i := i + 1
