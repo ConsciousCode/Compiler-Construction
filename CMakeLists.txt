@@ -50,6 +50,7 @@ add_executable(wisc
     src/emitter.cpp
     src/collect_vars.cpp
     src/whilegen.cpp
+    src/cfg.cpp
 
     # Parser + scanner
     src/parser.cpp
