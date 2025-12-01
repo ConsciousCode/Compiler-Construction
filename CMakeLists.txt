@@ -221,9 +221,9 @@ function(add_while_program PROGRAM_NAME)
     # Custom command to generate C code from WHILE code
     add_custom_command(
         OUTPUT ${C_FILE}
-        COMMAND cgen ${WHILE_FILE} > ${C_FILE}
+        COMMAND wisc ${WHILE_FILE} -cc -o ${C_FILE}
         DEPENDS ${WHILE_FILE}
-        DEPENDS cgen
+        DEPENDS wisc
         COMMENT "Generating C code for ${PROGRAM_NAME}.while"
     )
 
