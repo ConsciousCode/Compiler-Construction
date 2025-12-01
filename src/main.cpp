@@ -35,9 +35,7 @@ int main(int argc, char* argv[]) {
     /* Core Compiler Args */
     prog.add_argument("input").help("Input file");
     prog.add_argument("-o", "--output").help("Output file for Assembly").default_value("out.s");
-    prog.add_argument("-cc", "--c-code")
-        .help("Generate equivalent c code")
-        .flag();
+    prog.add_argument("-cc", "--c-code").help("Generate equivalent c code").flag();
     prog.add_argument("--c-source")
         .help("C code generation source")
         .default_value(std::string{"ast"})
@@ -221,8 +219,7 @@ int main(int argc, char* argv[]) {
         }
 
         c_output_file.close();
-    }
-    else{
+    } else {
         std::ofstream output_file(output_path);
 
         if (!output_file) {

@@ -37,7 +37,8 @@ struct CodeGenContext {
 
     /* Multi-line indent */
     std::string indent(const std::string& str) const {
-        if (indent_level == 0) return str;
+        if (indent_level == 0)
+            return str;
         std::string spaces = std::string(indent_level * 4, ' ');
         return spaces + cgen::ReplaceAll(str, "\n", "\n" + spaces);
     }
@@ -126,7 +127,6 @@ class Not : public LabeledNode {
     }
 
     std::string to_c(const CodeGenContext& ctx) const override;
-
 };
 
 class Logical : public LabeledNode {
@@ -205,7 +205,6 @@ class Assign : public LabeledNode {
         : Assign(std::move(ident), Expr{std::move(s)}, l) {}
 
     std::string to_c(const CodeGenContext& ctx) const override;
-
 };
 
 class If;

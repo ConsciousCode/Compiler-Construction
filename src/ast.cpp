@@ -24,7 +24,8 @@ std::string to_c(const ast::Expr& expr, const CodeGenContext& ctx) {
 }
 
 std::string ast::Arith::to_c(const CodeGenContext& ctx) const {
-    std::string code = ast::to_c(left, ctx.inc_depth()) + to_c(op) + ast::to_c(right, ctx.inc_depth());
+    std::string code =
+        ast::to_c(left, ctx.inc_depth()) + to_c(op) + ast::to_c(right, ctx.inc_depth());
 
     return ctx.parenthesize(code);
 }
@@ -39,13 +40,15 @@ std::string ast::Not::to_c(const CodeGenContext& ctx) const {
 }
 
 std::string ast::Logical::to_c(const CodeGenContext& ctx) const {
-    std::string result = ast::to_c(left, ctx.inc_depth()) + to_c(op) + ast::to_c(right, ctx.inc_depth());
+    std::string result =
+        ast::to_c(left, ctx.inc_depth()) + to_c(op) + ast::to_c(right, ctx.inc_depth());
 
     return ctx.parenthesize(result);
 }
 
 std::string ast::Comparison::to_c(const CodeGenContext& ctx) const {
-    std::string result = ast::to_c(left, ctx.inc_depth()) + to_c(op) + ast::to_c(right, ctx.inc_depth());
+    std::string result =
+        ast::to_c(left, ctx.inc_depth()) + to_c(op) + ast::to_c(right, ctx.inc_depth());
 
     return ctx.parenthesize(result);
 }
@@ -77,19 +80,15 @@ std::string ast::Block::to_c(const CodeGenContext& ctx) const {
 }
 
 std::string ast::If::to_c(const CodeGenContext& ctx) const {
-    std::string result = ctx.indent() + "if (" + ast::to_c(cond, ctx.depth_reset()) + ") {\n"
-       + then.to_c(ctx.inc_indent()) 
-       + ctx.indent() + "}\n" 
-       + ctx.indent() + "else {\n" 
-       + el.to_c(ctx.inc_indent()) 
-       + ctx.indent() + "}\n";
+    std::string result = ctx.indent() + "if (" + ast::to_c(cond, ctx.depth_reset()) + ") {\n" +
+                         then.to_c(ctx.inc_indent()) + ctx.indent() + "}\n" + ctx.indent() +
+                         "else {\n" + el.to_c(ctx.inc_indent()) + ctx.indent() + "}\n";
     return result;
 }
 
 std::string ast::While::to_c(const CodeGenContext& ctx) const {
-    std::string result = ctx.indent() + "while (" + ast::to_c(cond, ctx.depth_reset()) + ") {\n"
-       + body.to_c(ctx.inc_indent()) 
-       + ctx.indent() + "}\n";
+    std::string result = ctx.indent() + "while (" + ast::to_c(cond, ctx.depth_reset()) + ") {\n" +
+                         body.to_c(ctx.inc_indent()) + ctx.indent() + "}\n";
     return result;
 }
 
@@ -119,7 +118,8 @@ std::string ast::AST::to_c(const std::string& prog_name) const {
     // Store local variables
     index = 0;
     for (const auto& var : vars) {
-        result += ctx.indent() + "vars[" + std::to_string(index) + "] = " + cgen::mangle(var) + ";\n";
+        result +=
+            ctx.indent() + "vars[" + std::to_string(index) + "] = " + cgen::mangle(var) + ";\n";
         ++index;
     }
 
