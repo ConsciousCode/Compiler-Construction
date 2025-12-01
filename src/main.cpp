@@ -3,6 +3,7 @@
 #include "cfg_codegen.hpp"
 #include "cfg_graphviz.hpp"
 #include "codegen.hpp"
+#include "collect_vars.hpp"
 #include "graphviz.hpp"
 #include "parser.hpp"
 #include "scanner.hpp"
@@ -211,7 +212,9 @@ int main(int argc, char* argv[]) {
             break;
         }
         case C_GEN_SOURCE::CFG: {
-            throw std::logic_error("C Generation from CFG not yet implemented");
+            std::set<std::string> vars;
+            collect_vars(*ast.get_root(), vars);
+            c_output_file << g.to_c(program_name,vars);
             break;
         }
         default:

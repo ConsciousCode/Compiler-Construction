@@ -199,6 +199,7 @@ function(add_while_program PROGRAM_NAME)
     set(WHILE_FILE "${PROJECT_SOURCE_DIR}/examples/while/${PROGRAM_NAME}.while")
     set(ASM_FILE "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}.s")
     set(C_FILE "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}.c")
+    set(C_CFG_FILE "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}_cfg.c")
     set(RISCV_EXEC "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}_risc")
     
     # Custom command to generate assembly from WHILE code
@@ -225,7 +226,15 @@ function(add_while_program PROGRAM_NAME)
         COMMAND wisc ${WHILE_FILE} -cc -o ${C_FILE}
         DEPENDS ${WHILE_FILE}
         DEPENDS wisc
-        COMMENT "Generating C code for ${PROGRAM_NAME}.while"
+	COMMENT "Generating C code from AST for ${PROGRAM_NAME}.while"
+    )
+
+    add_custom_command(
+	OUTPUT ${C_CFG_FILE}
+	COMMAND wisc ${WHILE_FILE} -cc --c-source cfg -o ${C_CFG_FILE}
+        DEPENDS ${WHILE_FILE}
+        DEPENDS wisc
+	COMMENT "Generating C code from CFG for ${PROGRAM_NAME}.while"
     )
 
     # Create RISC-V Target
@@ -234,9 +243,12 @@ function(add_while_program PROGRAM_NAME)
     # Create C executable from generated C code
     add_executable(${PROGRAM_NAME}_c ${C_FILE} src/main.c)
     target_compile_definitions(${PROGRAM_NAME}_c PRIVATE PROGRAM_NAME=${PROGRAM_NAME})
+
+    add_executable(${PROGRAM_NAME}_c_cfg ${C_CFG_FILE} src/main.c)
+    target_compile_definitions(${PROGRAM_NAME}_c_cfg PRIVATE PROGRAM_NAME=${PROGRAM_NAME})
     
     # Create custom target that depends on BOTH versions
-    add_custom_target(${PROGRAM_NAME} ALL DEPENDS ${RISCV_EXEC} ${PROGRAM_NAME}_c)
+    add_custom_target(${PROGRAM_NAME} ALL DEPENDS ${RISCV_EXEC} ${PROGRAM_NAME}_c ${PROGRAM_NAME}_c_cfg)
     
     # Register this program in the global list
     set_property(GLOBAL APPEND PROPERTY WHILE_PROGRAMS_LIST ${PROGRAM_NAME})
@@ -248,7 +260,7 @@ add_while_program(closest_prime)
 add_while_program(collatz)
 # add_while_program(comment) # Parse error at Segmentation fault
 # add_while_program(comparatornetwork_bestknown_for_11) # Register overflow
-# add_while_program(countTriangularNumbers) # Register overflow
+add_while_program(countTriangularNumbers) # Register overflow
 add_while_program(factorial)
 add_while_program(fibonacci)
 # add_while_program(isprime) # Parse error 9:30 unexpected RBRACK
