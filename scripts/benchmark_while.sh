@@ -123,20 +123,20 @@ run_test closest_prime 5 5 0 0 0 0 0
 # run_test countTriangularNumbers 100 0 100 0 0 1 0 0
 
 # loop (n, output)
-# run_test loop 5 5 0
+run_test loop 5 5 0
 
 # madprimes (large test; provide primary W and some zeros)
 # run_test madprimes 50 50 0 0 0 0 0 0 0 0 0
 
 # primescounter (range)
-# run_test primescounter 100 100 0 0 0
+run_test primescounter 100 100 0 0 0
 
 # stress_gcd_mod and stress_gcd_sub (two inputs: a and b)
 run_test stress_gcd_mod 1234567 1234567 7654321 0
 run_test stress_gcd_sub 1234567 1234567 7654321 0
 
 # stress_prime_count (n)
-# run_test stress_prime_count 50 50 0 0 0
+run_test stress_prime_count 50 50 0 0 0
 
 # sumfactors (N)
 run_test sumfactors 20 20 0 0 0
