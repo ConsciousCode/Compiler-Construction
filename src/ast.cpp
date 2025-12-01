@@ -116,6 +116,13 @@ std::string ast::AST::to_c(const std::string& prog_name) const {
         result += "\n";
     }
 
+    // Store local variables
+    index = 0;
+    for (const auto& var : vars) {
+        result += ctx.indent() + "vars[" + std::to_string(index) + "] = " + cgen::mangle(var) + ";\n";
+        ++index;
+    }
+
     result += "}\n";
 
     return result;
