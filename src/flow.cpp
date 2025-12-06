@@ -6,21 +6,6 @@
 
 #include <iostream>
 
-/**
- * Flow analysis equation, its use depends on the type of analysis being
- * done. All of them are of the form V(l) = V'(l) \ kill U gen.
- * Analyses differ in which V and V' are (entry vs exit) and if they're
- * combined with union or intersection.
-**/
-struct FlowEq {
-    std::set<std::string> gen;
-    std::set<std::string> kill;
-};
-
-struct Equations {
-    std::unordered_map<size_t, FlowEq> lv;
-};
-
 void lv_genset(cfg::CFGBlock& block, std::set<std::string>& gen) {
     switch(block.kind) {
         case cfg::BlockKind::Assignment: {
@@ -60,7 +45,7 @@ std::ostream& operator<<(std::ostream& os, const AnaTerm& ana) {
 }
 
 template<typename T>
-std::ostream& operator<<(std::ostream& os, std::set<T>& s) {
+std::ostream& operator<<(std::ostream& os, const std::set<T>& s) {
     os << "{";
     if(s.size() > 0) {
         auto it = s.begin();
@@ -72,17 +57,43 @@ std::ostream& operator<<(std::ostream& os, std::set<T>& s) {
     return os << "}";
 }
 
-struct FlowAnalysis {
-    Analysis ana;
-    Equations eqns;
-    std::set<std::string> exit_live;
+void FlowAnalysis::print_equations(const cfg::CFG& cfg) const {
+    for(const auto& [label, ana] : lv) {
+        std::cout << "LVo(" << label << ") = LVx(" << label << ")";
+        if(ana.eqn.kill.size()) {
+            std::cout << " \\ " << ana.eqn.kill;
+        }
+        if(ana.eqn.gen.size()) {
+            std::cout << " U " << ana.eqn.gen;
+        }
+        std::cout << std::endl;
+
+        std::cout << "LVx(" << label << ") = ";
+        const auto& block = *cfg.blocks[label];
+        if(block.succs.size() == 0) {
+            std::cout << exit_live;
+        }
+        else {
+            auto it = block.succs.begin();
+            std::cout << "LVo(" << (*it++)->id << ")";
+            while(it != block.succs.end()) {
+                std::cout << " U LVo(" << (*it++)->id << ")";
+            }
+        }
+        std::cout << std::endl;
+    }
+}
+
+struct _Analyze {
+    FlowAnalysis ana;
     
-    FlowAnalysis(const cfg::CFG& cfg, const std::set<std::string> el) : exit_live(el) {
+    _Analyze(const cfg::CFG& cfg, const std::set<std::string> el) {
+        ana.exit_live = el;
         for(const auto& block : cfg.blocks) {
             FlowEq lv_eqn;
             lv_genset(*block, lv_eqn.gen);
             lv_killset(*block, lv_eqn.kill);
-            eqns.lv[block->id] = lv_eqn;
+            ana.lv[block->id].eqn = lv_eqn;
 
             std::cout << block->id << ": gen " << lv_eqn.gen << " | kill " << lv_eqn.kill << std::endl;
         }
@@ -90,7 +101,7 @@ struct FlowAnalysis {
 
     bool lv_fixedpoint(const cfg::CFGBlock& block) {
         bool fixed = true;
-        auto& eqn = eqns.lv[block.id];
+        auto& eqn = ana.lv[block.id].eqn;
         auto& lv = ana.lv[block.id];
 
         /// entry = exit \ kill U gen ///
@@ -122,7 +133,7 @@ struct FlowAnalysis {
         assert(lv.exit.size() == 0);
 
         if(block.succs.size() == 0) {
-            lv.exit.insert(exit_live.begin(), exit_live.end());
+            lv.exit.insert(ana.exit_live.begin(), ana.exit_live.end());
         }
         else {
             for(auto& succ : block.succs) {
@@ -140,7 +151,7 @@ struct FlowAnalysis {
         return fixed;
     }
 
-    Analysis analyze(const cfg::CFG& cfg) {
+    FlowAnalysis analyze(const cfg::CFG& cfg) {
         int limit = 0;
         bool fixed;
         do {
@@ -161,7 +172,7 @@ struct FlowAnalysis {
     }
 };
 
-Analysis flow_analysis(const cfg::CFG& cfg, const std::set<std::string>& exit_live) {
-    FlowAnalysis flow{cfg, exit_live};
+FlowAnalysis flow_analysis(const cfg::CFG& cfg, const std::set<std::string>& exit_live) {
+    _Analyze flow{cfg, exit_live};
     return flow.analyze(cfg);
 }

@@ -169,6 +169,7 @@ int main(int argc, char* argv[]) {
     }
 
     auto ana = flow_analysis(g, {"output"});
+    ana.print_equations(g);
 
     /* Generate Code */
     /*

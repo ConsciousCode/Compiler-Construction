@@ -7,7 +7,7 @@
 #include "cfg.hpp"
 
 /**
- * (var, label) pair used in flow analyses.
+ * (var, label) pair used in flow analyses. (Currently unused)
 **/
 struct AnaTerm {
     std::string var;
@@ -32,19 +32,34 @@ struct hash<AnaTerm> {
 }  // namespace std
 
 /**
+ * Flow analysis equation, its use depends on the type of analysis being
+ * done. All of them are of the form V(l) = V'(l) \ kill U gen.
+ * Analyses differ in which V and V' are (entry vs exit) and if they're
+ * combined with union or intersection.
+**/
+struct FlowEq {
+    std::set<std::string> gen;
+    std::set<std::string> kill;
+};
+
+/**
  * Combined entry/exit information for an analysis
 **/
 template<typename T>
-struct EntryExit {
+struct Analysis {
     std::set<T> entry;
     std::set<T> exit;
+    FlowEq eqn;
 };
 
 /**
  * The results of flow analysis over a CFG.
 **/
-struct Analysis {
-    std::map<size_t, EntryExit<std::string>> lv; // Live Variable analysis
+struct FlowAnalysis {
+    std::map<size_t, Analysis<std::string>> lv; // Live Variable analysis
+    std::set<std::string> exit_live;
+
+    void print_equations(const cfg::CFG& cfg) const;
 };
 
-Analysis flow_analysis(const cfg::CFG& cfg, const std::set<std::string>& exit_live);
+FlowAnalysis flow_analysis(const cfg::CFG& cfg, const std::set<std::string>& exit_live);
