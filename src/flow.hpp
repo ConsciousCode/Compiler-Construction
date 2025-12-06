@@ -1,7 +1,7 @@
 #pragma once
 
 #include <functional>
-#include <unordered_set>
+#include <set>
 #include <unordered_map>
 
 #include "cfg.hpp"
@@ -34,16 +34,17 @@ struct hash<AnaTerm> {
 /**
  * Combined entry/exit information for an analysis
 **/
+template<typename T>
 struct EntryExit {
-    std::unordered_set<AnaTerm> entry;
-    std::unordered_set<AnaTerm> exit;
+    std::set<T> entry;
+    std::set<T> exit;
 };
 
 /**
  * The results of flow analysis over a CFG.
 **/
 struct Analysis {
-    std::unordered_map<size_t, EntryExit> lv; // Live Variable analysis
+    std::unordered_map<size_t, EntryExit<std::string>> lv; // Live Variable analysis
 };
 
 Analysis flow_analysis(const cfg::CFG& cfg);
