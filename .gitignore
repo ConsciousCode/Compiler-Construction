@@ -48,5 +48,5 @@ out/
 build/
 _deps/
 
-./*.s
+/*.s
 .vscode
