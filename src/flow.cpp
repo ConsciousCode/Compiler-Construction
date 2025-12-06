@@ -59,28 +59,35 @@ std::ostream& operator<<(std::ostream& os, const std::set<T>& s) {
 
 void FlowAnalysis::print_equations(const cfg::CFG& cfg) const {
     for(const auto& [label, ana] : lv) {
-        std::cout << "LVo(" << label << ") = LVx(" << label << ")";
+        std::cout << "LA◦(" << label << ") = LA•(" << label << ")";
         if(ana.eqn.kill.size()) {
             std::cout << " \\ " << ana.eqn.kill;
         }
         if(ana.eqn.gen.size()) {
-            std::cout << " U " << ana.eqn.gen;
+            std::cout << " ∪ " << ana.eqn.gen;
         }
         std::cout << std::endl;
 
-        std::cout << "LVx(" << label << ") = ";
+        std::cout << "LA•(" << label << ") = ";
         const auto& block = *cfg.blocks[label];
         if(block.succs.size() == 0) {
             std::cout << exit_live;
         }
         else {
             auto it = block.succs.begin();
-            std::cout << "LVo(" << (*it++)->id << ")";
+            std::cout << "LA◦(" << (*it++)->id << ")";
             while(it != block.succs.end()) {
-                std::cout << " U LVo(" << (*it++)->id << ")";
+                std::cout << " ∪ LA◦(" << (*it++)->id << ")";
             }
         }
         std::cout << std::endl;
+    }
+}
+
+void FlowAnalysis::print_solution() const {
+    for(const auto& [label, ana] : lv) {
+        std::cout << "LA◦(" << label << ") = " << ana.entry << std::endl;
+        std::cout << "LA•(" << label << ") = " << ana.exit << std::endl;
     }
 }
 
@@ -94,8 +101,6 @@ struct _Analyze {
             lv_genset(*block, lv_eqn.gen);
             lv_killset(*block, lv_eqn.kill);
             ana.lv[block->id].eqn = lv_eqn;
-
-            std::cout << block->id << ": gen " << lv_eqn.gen << " | kill " << lv_eqn.kill << std::endl;
         }
     }
 
@@ -104,7 +109,7 @@ struct _Analyze {
         auto& eqn = ana.lv[block.id].eqn;
         auto& lv = ana.lv[block.id];
 
-        /// entry = exit \ kill U gen ///
+        /// entry = exit \ kill ∪ gen ///
         std::set<std::string> orig;
         std::set<std::string> tmp;
 
@@ -118,16 +123,13 @@ struct _Analyze {
             std::inserter(lv.entry, lv.entry.begin())
         );
 
-        // entry = tmp U gen
+        // entry = tmp ∪ gen
         lv.entry.insert(eqn.gen.begin(), eqn.gen.end());
 
         // Check for fixed point
         fixed &= lv.entry == orig;
-        if(lv.entry != orig) {
-            //std::cout << "Fixedpoint entry: " << block.id << " " << orig << " != " << lv.entry << " = " << lv.exit << " \\ " << eqn.kill << " U " << eqn.gen << std::endl;
-        }
 
-        /// exit = U {succs} ///
+        /// exit = ∪ {succs} ///
         orig.clear();
         orig.swap(lv.exit);
         assert(lv.exit.size() == 0);
@@ -144,9 +146,6 @@ struct _Analyze {
 
         // Check for fixed point
         fixed &= lv.exit == orig;
-        if(lv.exit != orig) {
-            //std::cout << "Fixedpoint exit: " << block.id << " " << lv.exit << " | " << orig << std::endl;
-        }
 
         return fixed;
     }
@@ -160,14 +159,8 @@ struct _Analyze {
             for(const auto& block : cfg.blocks) {
                 fixed &= lv_fixedpoint(*block);
             }
-            //std::cout << "loop" << std::endl;
         } while(!fixed && ++limit < 30);
 
-        //std::cout << "Limit " << limit << std::endl;
-
-        for(auto& [label, ox] : ana.lv) {
-            std::cout << label << ": entry " << ox.entry << " | exit " << ox.exit << std::endl;
-        }
         return ana;
     }
 };

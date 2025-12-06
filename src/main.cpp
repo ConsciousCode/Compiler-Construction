@@ -46,6 +46,9 @@ int main(int argc, char* argv[]) {
         .default_value(std::string("cfg.dot"));
     prog.add_argument("-sv", "--show-cfg-vars").help("Include used vars in CFG node labels").flag();
 
+    /* Flow analysis */
+    prog.add_argument("-pf", "--print-flow").help("Print the flow analysis equations").flag();
+
     try {
         prog.parse_args(argc, argv);
     } catch (const std::exception& e) {
@@ -71,6 +74,8 @@ int main(int argc, char* argv[]) {
     const bool GRAPH_CFG = prog.is_used("--graph-cfg");
     std::filesystem::path cfg_graph_path(prog.get<std::string>("--graph-cfg"));
     const bool SHOW_CFG_VARS = prog.get<bool>("--show-cfg-vars");
+
+    const bool PRINT_FLOW = prog.get<bool>("--print-flow");
 
     /* Load and read input file */
     std::ifstream input_file(input_path);
@@ -168,8 +173,13 @@ int main(int argc, char* argv[]) {
         cfg_dot_file.close();
     }
 
-    auto ana = flow_analysis(g, {"output"});
-    ana.print_equations(g);
+    if(PRINT_FLOW) {
+        auto ana = flow_analysis(g, {"output"});
+        std::cout << "Equations:" << std::endl;
+        ana.print_equations(g);
+        std::cout << std::endl << "Solutions:" << std::endl;
+        ana.print_solution();
+    }
 
     /* Generate Code */
     /*

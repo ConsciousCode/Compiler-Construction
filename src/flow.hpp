@@ -60,6 +60,7 @@ struct FlowAnalysis {
     std::set<std::string> exit_live;
 
     void print_equations(const cfg::CFG& cfg) const;
+    void print_solution() const;
 };
 
 FlowAnalysis flow_analysis(const cfg::CFG& cfg, const std::set<std::string>& exit_live);
