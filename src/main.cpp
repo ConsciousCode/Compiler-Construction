@@ -7,6 +7,7 @@
 #include "parser.hpp"
 #include "scanner.hpp"
 #include "while_parser.hpp"
+#include "flow.hpp"
 
 #include <argparse/argparse.hpp>
 #include <filesystem>
@@ -166,6 +167,8 @@ int main(int argc, char* argv[]) {
         cfg::print_cfg_dot(g, cfg_dot_file, SHOW_CFG_VARS);
         cfg_dot_file.close();
     }
+
+    auto ana = flow_analysis(g);
 
     /* Generate Code */
     /*
