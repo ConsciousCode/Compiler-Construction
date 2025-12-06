@@ -75,8 +75,9 @@ std::ostream& operator<<(std::ostream& os, std::set<T>& s) {
 struct FlowAnalysis {
     Analysis ana;
     Equations eqns;
+    std::set<std::string> exit_live;
     
-    FlowAnalysis(const cfg::CFG& cfg) {
+    FlowAnalysis(const cfg::CFG& cfg, const std::set<std::string> el) : exit_live(el) {
         for(const auto& block : cfg.blocks) {
             FlowEq lv_eqn;
             lv_genset(*block, lv_eqn.gen);
@@ -112,7 +113,7 @@ struct FlowAnalysis {
         // Check for fixed point
         fixed &= lv.entry == orig;
         if(lv.entry != orig) {
-            std::cout << "Fixedpoint entry: " << block.id << " " << orig << " != " << lv.entry << " = " << lv.exit << " \\ " << eqn.kill << " U " << eqn.gen << std::endl;
+            //std::cout << "Fixedpoint entry: " << block.id << " " << orig << " != " << lv.entry << " = " << lv.exit << " \\ " << eqn.kill << " U " << eqn.gen << std::endl;
         }
 
         /// exit = U {succs} ///
@@ -120,15 +121,20 @@ struct FlowAnalysis {
         orig.swap(lv.exit);
         assert(lv.exit.size() == 0);
 
-        for(auto& succ : block.succs) {
-            auto& lvo = ana.lv[succ->id].entry;
-            lv.exit.insert(lvo.begin(), lvo.end());
+        if(block.succs.size() == 0) {
+            lv.exit.insert(exit_live.begin(), exit_live.end());
+        }
+        else {
+            for(auto& succ : block.succs) {
+                auto& lvo = ana.lv[succ->id].entry;
+                lv.exit.insert(lvo.begin(), lvo.end());
+            }
         }
 
         // Check for fixed point
         fixed &= lv.exit == orig;
         if(lv.exit != orig) {
-            std::cout << "Fixedpoint exit: " << block.id << " " << lv.exit << " | " << orig << std::endl;
+            //std::cout << "Fixedpoint exit: " << block.id << " " << lv.exit << " | " << orig << std::endl;
         }
 
         return fixed;
@@ -143,10 +149,10 @@ struct FlowAnalysis {
             for(const auto& block : cfg.blocks) {
                 fixed &= lv_fixedpoint(*block);
             }
-            std::cout << "loop" << std::endl;
+            //std::cout << "loop" << std::endl;
         } while(!fixed && ++limit < 30);
 
-        std::cout << "Limit " << limit << std::endl;
+        //std::cout << "Limit " << limit << std::endl;
 
         for(auto& [label, ox] : ana.lv) {
             std::cout << label << ": entry " << ox.entry << " | exit " << ox.exit << std::endl;
@@ -155,7 +161,7 @@ struct FlowAnalysis {
     }
 };
 
-Analysis flow_analysis(const cfg::CFG& cfg) {
-    FlowAnalysis flow{cfg};
+Analysis flow_analysis(const cfg::CFG& cfg, const std::set<std::string>& exit_live) {
+    FlowAnalysis flow{cfg, exit_live};
     return flow.analyze(cfg);
 }

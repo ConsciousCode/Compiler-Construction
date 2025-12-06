@@ -2,7 +2,7 @@
 
 #include <functional>
 #include <set>
-#include <unordered_map>
+#include <map>
 
 #include "cfg.hpp"
 
@@ -44,7 +44,7 @@ struct EntryExit {
  * The results of flow analysis over a CFG.
 **/
 struct Analysis {
-    std::unordered_map<size_t, EntryExit<std::string>> lv; // Live Variable analysis
+    std::map<size_t, EntryExit<std::string>> lv; // Live Variable analysis
 };
 
-Analysis flow_analysis(const cfg::CFG& cfg);
+Analysis flow_analysis(const cfg::CFG& cfg, const std::set<std::string>& exit_live);

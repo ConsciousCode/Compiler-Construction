@@ -169,24 +169,26 @@ std::string to_c(std::string entry, const ast::Block& block) {
     code << "void " << entry << "(int64_t vars[]) {\n";
 
     // Load local variables
-    code << "    int64_t ";
+    if(vars.size() > 0) {
+        code << "    int64_t ";
 
-    int index = 0;
-    for (const auto& var : vars) {
-        if (index > 0)
-            code << ", ";
-        code << var << " = vars[" << index << "]";
-        ++index;
+        int index = 0;
+        for (const auto& var : vars) {
+            if (index > 0)
+                code << ", ";
+            code << mangle(var) << " = vars[" << index << "]";
+            ++index;
+        }
+        code << ";\n";
     }
-    code << ";\n";
 
     // Code
     code << indent(to_c_inner(block)) << "\n";
 
     // Store local variables
-    index = 0;
+    int index = 0;
     for (const auto& var : vars) {
-        code << "    vars[" << index << "] = " << var << ";\n";
+        code << "    vars[" << index << "] = " << mangle(var) << ";\n";
         ++index;
     }
 

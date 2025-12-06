@@ -168,7 +168,7 @@ int main(int argc, char* argv[]) {
         cfg_dot_file.close();
     }
 
-    auto ana = flow_analysis(g);
+    auto ana = flow_analysis(g, {"output"});
 
     /* Generate Code */
     /*
