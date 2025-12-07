@@ -448,13 +448,6 @@ struct CFG_Codegen {
         emit_line("addi sp, sp, " + std::to_string(max_depth * 8));
 
         // Load variables back into the array
-        for (const auto& [name, off] : name_offsets) {
-            std::string r = var_reg(name);
-            if (!r.empty()) {
-                emit_comm("output (" + name + ") <- " + r);
-                emit_line("sd " + r + ", " + std::to_string(off*8) + "(a0)");
-            }
-        }
         emit_line("ret");
     }
 
