@@ -52,6 +52,17 @@ void CFG::dce(FlowAnalysis& fa) {
 
         // It must be dead
 
+        if(entry == pblock) {
+            if(block->succs.empty()) {
+                // Empty program - is this safe?
+                entry = nullptr;
+            }
+            else {
+                assert(block->succs.size() == 1);
+                entry = block->succs[0];
+            }
+        }
+
         if(block->succs.empty()) {
             // Just remove from preds
             for(const auto& pred : block->preds) {
@@ -60,8 +71,28 @@ void CFG::dce(FlowAnalysis& fa) {
                 });
                 printf("Erase\n");
             }
+
+            if(entry == pblock) {
+                // Is this safe?
+                entry = nullptr;
+            }
+
+            // Update exit if needed
+            if(exit == pblock) {
+                if(block->preds.empty()) {
+                    // Now an empty program - is this safe?
+                    exit = nullptr;
+                }
+                else {
+                    assert(block->preds.size() == 1);
+                    exit = block->preds[0];
+                }
+            }
         }
         else {
+            // Assignment should never have more than one successor
+            assert(block->succs.size() == 1);
+
             // Assignment will only ever have one successor
             const auto& succ = block->succs[0];
 
@@ -83,6 +114,21 @@ void CFG::dce(FlowAnalysis& fa) {
                 block->preds.begin(),
                 block->preds.end()
             );
+
+            if(entry == pblock) {
+                entry = block->succs[0];
+            }
+            if(exit == pblock) {
+                if(block->preds.empty()) {
+                    // Now an empty program - is this safe?
+                    exit = nullptr;
+                }
+                else {
+                    // Assignment should never have more than one pred
+                    assert(block->preds.size() == 1);
+                    exit = block->preds[0];
+                }
+            }
         }
 
         // Remove from flow analysis

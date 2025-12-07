@@ -1,0 +1,9 @@
+digraph CGF {
+ node [shape=box];
+ B0 [label="n > 0 ?", style=bold, peripheries=2];
+ B1 [label="output := output + 1"];
+ B2 [label="n := n - 1"];
+ B0 -> B1;
+ B1 -> B2;
+ B2 -> B0;
+}

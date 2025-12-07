@@ -1,0 +1,4 @@
+digraph CGF {
+ node [shape=box];
+ B1 [label="output := 1", peripheries=2];
+}
