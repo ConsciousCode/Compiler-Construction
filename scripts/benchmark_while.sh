@@ -65,9 +65,22 @@ run_test() {
     
     # Compare outputs and display results
     if [ "$risc_output" == "$c_output" ]; then
-        status="${GREEN}✓${NC}"
+    	status="✓"
     else
-        status="${RED}✗${NC}"
+    	status="✗"
+
+        echo
+    	echo "------------------------------------------------------------"
+    	echo " MISMATCH FOR: $program_name  input=($args)"
+    	echo "------------------------------------------------------------"
+    	echo "Expected output (C version):"
+    	echo "----------------------------"
+    	echo "$c_output"
+    	echo
+    	echo "Actual output (RISC-V version):"
+    	echo "-------------------------------"
+    	echo "$risc_output"
+    	echo
     fi
 
     # Truncate program name if it's longer than PROG_COL and append '...'
