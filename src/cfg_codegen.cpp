@@ -238,12 +238,11 @@ struct CFG_Codegen {
                     emit_asm("li", dst, std::to_string(node));
                 } else if constexpr (std::is_same_v<T, std::string>) {
                     // Store register onto the stack
-                    std::string r = var_reg(node);
-                    if (!r.empty()) {
-                        emit_asm("mv", dst, r);
-                    } else {
-                        emit_asm("ld", dst, var_addr(node));
-                    }
+                    auto it = name_offsets.find(node);
+                    assert(it != name_offsets.end());
+                    int off = it->second;
+
+                    emit_line("ld " + dst + ", " + std::to_string(off * 8) + "(a0)");
                 } else if constexpr (std::is_same_v<T, std::shared_ptr<ast::Arith>>) {
                     // Use t0 as the temporary top of stack and then store
                     emit_arith(dst, *node, depth);
