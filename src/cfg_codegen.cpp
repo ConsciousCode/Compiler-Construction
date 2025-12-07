@@ -8,12 +8,10 @@
 
 #include <algorithm>
 #include <cassert>
-#include <cstdio>
-#include <iostream>
 #include <set>
 #include <string>
 #include <type_traits>
-#include <unordered_map>
+#include <map>
 
 /**
  * Get the depth of an AST expression to determine the size of the
@@ -48,16 +46,25 @@ int depth_of(const ast::Expr& expr) {
  **/
 struct CFG_Codegen {
     int max_depth;
-    std::unordered_map<std::string, int> name_offsets;
-    std::unordered_map<size_t, std::string> cond_labels;
+    std::map<std::string, int> name_offsets;
+    std::map<size_t, std::string> cond_labels;
+    std::map<std::string, size_t> regs; // Register allocations
+    std::map<std::string, size_t> spill; // Variables spilled to stack
     std::set<size_t> seen_ids;
     std::string program_name;
     Emitter emit;
 
-    CFG_Codegen(const cfg::CFG& cfg, const std::string& prog) {
+    CFG_Codegen(
+            const cfg::CFG& cfg, const std::string& prog,
+            const std::map<std::string, size_t>& regs,
+            const std::map<std::string, size_t> spill
+    ) : regs(regs), spill(spill) {
         std::set<std::string> varset;
         program_name = prog;
         max_depth = 0;
+
+        // Aggregate all vars and the maximum stack depth for expression evaluation (not including spilled vars)
+
         for (const auto& block : cfg.blocks) {
             switch (block->kind) {
             case cfg::BlockKind::Assignment: {
@@ -79,11 +86,10 @@ struct CFG_Codegen {
             }
         }
 
-        std::vector<std::string> vars{varset.begin(), varset.end()};
-        std::sort(vars.begin(), vars.end());
+        // Construct var offsets in the array
 
         int off = 0;
-        for (const auto& var : vars) {
+        for (const auto& var : varset) {
             name_offsets[var] = off++;
         }
     }
@@ -417,8 +423,13 @@ struct CFG_Codegen {
 /**
  * Generate RISC-V pseudocode from a CFG using infinite sN registers.
  **/
-std::string cfg::cfg_codegen(const cfg::CFG& cfg, const std::string& program_name) {
-    CFG_Codegen cgen(cfg, program_name);
+std::string cfg::cfg_codegen(cfg::CFG& cfg, const std::string& program_name) {
+    // Analysis ana = flow_analysis(cfg, exit_live);
+    // cfg.dce(ana);
+    // std::map<std::string, size_t> regs = register_alloc(ana); // (mapping to register)
+    // std::map<std::string, size_t> spill = {all vars not in regs} // (mapping to stack offsets)
+    // CFG_Codegen cgen(cfg, program_name, regs, spill);
+    CFG_Codegen cgen(cfg, program_name, {}, {});
     cgen.cfg_codegen(cfg.entry);
     return cgen.emit.str();
 }
