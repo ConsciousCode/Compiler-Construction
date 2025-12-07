@@ -19,6 +19,7 @@
  * Get the depth of an AST expression to determine the size of the
  * evaluation stack.
  **/
+static Allocation g_alloc;
 int depth_of(const ast::Arith& arith);
 int depth_of(const ast::Expr& expr);
 
@@ -43,6 +44,27 @@ int depth_of(const ast::Expr& expr) {
         expr);
 }
 
+static std::string var_reg(const std::string& name) {
+    auto it = g_alloc.var_to_reg.find(name);
+    if (it == g_alloc.var_to_reg.end()) {
+        return "";
+    }
+
+    return it->second;
+}
+
+
+static int var_slot(const std::string& name) {
+    auto it = g_alloc.var_to_slot.find(name);
+    assert(it != g_alloc.var_to_slot.end());
+    return it->second;
+}
+
+static std::string var_addr(const std::string& name) {
+    int slot = var_slot(name);
+    int offset = slot * 8;
+    return std::to_string(offset) + "(a0)";
+}
 /**
  * Stateful meat of codgen from CFG.
  **/
@@ -85,6 +107,11 @@ struct CFG_Codegen {
         int off = 0;
         for (const auto& var : vars) {
             name_offsets[var] = off++;
+        }
+
+        name_offsets.clear();
+        for (const auto& [name, slot] : g_alloc.var_to_slot) {
+            name_offsets[name] = slot;
         }
     }
 
@@ -211,7 +238,12 @@ struct CFG_Codegen {
                     emit_asm("li", dst, std::to_string(node));
                 } else if constexpr (std::is_same_v<T, std::string>) {
                     // Store register onto the stack
-                    emit_asm("mv", dst, name_reg(node));
+                    std::string r = var_reg(node);
+                    if (!r.empty()) {
+                        emit_asm("mv", dst, r);
+                    } else {
+                        emit_asm("ld", dst, var_addr(node));
+                    }
                 } else if constexpr (std::is_same_v<T, std::shared_ptr<ast::Arith>>) {
                     // Use t0 as the temporary top of stack and then store
                     emit_arith(dst, *node, depth);
@@ -311,7 +343,14 @@ struct CFG_Codegen {
 
             // Put the expr in the register
             emit_comm(ablock->lhs + " := " + to_while(ablock->expr));
-            emit_expr(name_reg(ablock->lhs), ablock->expr, 0);
+            emit_expr("t0", ablock->expr, 0);
+            std::string r = var_reg(ablock->lhs);
+            if (!r.empty()) {
+                emit_asm("mv", r, "t0");
+                emit_asm("sd", r, var_addr(ablock->lhs));
+            } else {
+                emit_asm("sd", "t0", var_addr(ablock->lhs));
+            }
 
             if (ablock->succs.size() == 0) {
                 emit_asm("j", "L_return");
@@ -372,8 +411,14 @@ struct CFG_Codegen {
         std::string sb;
         ;
         for (const auto& [name, off] : name_offsets) {
-            sb = name + "=" + off_reg(off) + ", " + sb;
+            std::string r = var_reg(name);
+            if (!r.empty()) {
+                sb = name + "=" + r + "(slot " + std::to_string(off) + "), " + sb;
+            } else {
+                sb = name + "=[spill @slot " + std::to_string(off) + "], " + sb;
+            }
         }
+
         emit_line("#vars: " + sb, false);
 
         emit_line(".text", false);
@@ -385,8 +430,11 @@ struct CFG_Codegen {
 
         // Unload variables from the array
         for (const auto& [name, off] : name_offsets) {
-            emit_comm(off_reg(off) + " <- input (" + name + ")");
-            emit_line("ld " + off_reg(off) + ", " + std::to_string(off * 8) + "(a0)");
+            std::string r = var_reg(name);
+            if (!r.empty()) {
+                emit_comm(r + " <- input (" + name + ")");
+                emit_line("ld " + r + ", " + std::to_string(off * 8) + "(a0)");
+            }
         }
         emit_line("");
     }
@@ -401,8 +449,11 @@ struct CFG_Codegen {
 
         // Load variables back into the array
         for (const auto& [name, off] : name_offsets) {
-            emit_comm("output (" + name + ") <- " + off_reg(off));
-            emit_line("sd " + off_reg(off) + ", " + std::to_string(off * 8) + "(a0)");
+            std::string r = var_reg(name);
+            if (!r.empty()) {
+                emit_comm("output (" + name + ") <- " + r);
+                emit_line("sd " + r + ", " + std::to_string(off*8) + "(a0)");
+            }
         }
         emit_line("ret");
     }
@@ -417,7 +468,8 @@ struct CFG_Codegen {
 /**
  * Generate RISC-V pseudocode from a CFG using infinite sN registers.
  **/
-std::string cfg::cfg_codegen(const cfg::CFG& cfg, const std::string& program_name) {
+std::string cfg::cfg_codegen(const cfg::CFG& cfg, const std::string& program_name, const Allocation& alloc) {
+    g_alloc = alloc;
     CFG_Codegen cgen(cfg, program_name);
     cgen.cfg_codegen(cfg.entry);
     return cgen.emit.str();

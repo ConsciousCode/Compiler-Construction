@@ -8,6 +8,7 @@
 #include "scanner.hpp"
 #include "while_parser.hpp"
 #include "flow.hpp"
+#include "reg_alloc.hpp"
 
 #include <argparse/argparse.hpp>
 #include <filesystem>
@@ -173,13 +174,35 @@ int main(int argc, char* argv[]) {
         cfg_dot_file.close();
     }
 
+    auto ana = flow_analysis(g, {"output"});
+
     if(PRINT_FLOW) {
-        auto ana = flow_analysis(g, {"output"});
         std::cout << "Equations:" << std::endl;
         ana.print_equations(g);
         std::cout << std::endl << "Solutions:" << std::endl;
         ana.print_solution();
+
+        auto entry_id = g.entry->id;
+        auto it = ana.lv.find(entry_id);
+        if(it != ana.lv.end()) {
+            std::cout << "\nLive at entry: {";
+            bool first = true;
+            for (const auto &v : it->second.entry) {
+                if (!first) {
+                    std::cout << ", ";
+                }
+
+                first = false;
+                std::cout << v;
+            }
+
+            std::cout << "}\n";
+        } else {
+            std::cerr << "Error: no liveness infor for entry block " << entry_id << "\n";
+        }
     }
+
+    Allocation alloc = allocate_registers(g, ana);
 
     /* Generate Code */
     /*
@@ -201,7 +224,7 @@ int main(int argc, char* argv[]) {
     }
 
     // output_file << out_code.riscv;
-    output_file << cfg::cfg_codegen(g, program_name);
+    output_file << cfg::cfg_codegen(g, program_name, alloc);
     output_file.close();
 
     return 0;

@@ -169,3 +169,14 @@ FlowAnalysis flow_analysis(const cfg::CFG& cfg, const std::set<std::string>& exi
     _Analyze flow{cfg, exit_live};
     return flow.analyze(cfg);
 }
+
+std::set<std::string> live_vars_at_entry(const cfg::CFG &g) {
+    FlowAnalysis ana = flow_analysis(g, {"output"});
+
+    auto entry_id = g.entry->id;
+    auto it = ana.lv.find(entry_id);
+    if (it == ana.lv.end()) {
+        throw std::runtime_error("No liveness infor for entry block");
+    }
+    return it->second.entry;
+}
