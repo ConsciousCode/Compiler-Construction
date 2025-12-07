@@ -20,6 +20,9 @@ set(COMMON_FLAGS "-Wall -Wextra -Werror -fno-rtti")
 set(CMAKE_CXX_FLAGS_DEBUG   "${COMMON_FLAGS} -g")
 set(CMAKE_CXX_FLAGS_RELEASE "${COMMON_FLAGS} -O3 -DNDEBUG")
 
+# Prevent cmake from refetching already downloaded content
+set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
+
 include(FetchContent)
 FetchContent_Declare(
   googletest
@@ -219,6 +222,9 @@ function(add_while_program PROGRAM_NAME)
         DEPENDS cgen
         COMMENT "Generating C code for ${PROGRAM_NAME}.while"
     )
+
+    # Create RISC-V Target
+    add_custom_target(${PROGRAM_NAME}_risc  DEPENDS ${RISCV_EXEC})
     
     # Create C executable from generated C code
     add_executable(${PROGRAM_NAME}_c ${C_FILE} src/main.c)
@@ -235,24 +241,24 @@ add_while_program(add)
 add_while_program(chain_prime)
 add_while_program(closest_prime)
 add_while_program(collatz)
-# add_while_program(comment)
-# add_while_program(comparatornetwork_bestknown_for_11)
-# add_while_program(countTriangularNumbers)
+# add_while_program(comment) # Parse error at Segmentation fault
+# add_while_program(comparatornetwork_bestknown_for_11) # Register overflow
+# add_while_program(countTriangularNumbers) # Register overflow
 add_while_program(factorial)
 add_while_program(fibonacci)
-add_while_program(isprime)
-# add_while_program(loop)
-# add_while_program(madprimes)
-# add_while_program(primescounter)
-add_while_program(pseudomatrices)
-add_while_program(quad2)
-add_while_program(quadratic)
+# add_while_program(isprime) # Parse error 9:30 unexpected RBRACK
+add_while_program(loop)
+# add_while_program(madprimes) # Register overflow
+add_while_program(primescounter)
+# add_while_program(pseudomatrices) # Register overflow
+# add_while_program(quad2) # Register overflow
+# add_while_program(quadratic) # Register overflow
 add_while_program(stress_factorial)
 add_while_program(stress_gcd_mod)
 add_while_program(stress_gcd_sub)
-# add_while_program(stress_prime_count)
+add_while_program(stress_prime_count)
 add_while_program(sumfactors)
-add_while_program(torture)
+# add_while_program(torture) # Parse error 2:13 RBRACK
 
 # Automatically create a target that builds all WHILE programs
 get_property(ALL_WHILE_PROGRAMS GLOBAL PROPERTY WHILE_PROGRAMS_LIST)

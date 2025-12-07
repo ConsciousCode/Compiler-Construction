@@ -192,7 +192,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     */
-   
+
     std::ofstream output_file(output_path);
 
     if (!output_file) {
@@ -200,7 +200,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    //output_file << out_code.riscv;
+    // output_file << out_code.riscv;
     output_file << cfg::cfg_codegen(g, program_name);
     output_file.close();
 

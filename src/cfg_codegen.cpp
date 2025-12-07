@@ -331,10 +331,8 @@ struct CFG_Codegen {
             emit_label(build_label(block->id, "L_cond"));
 
             cfg::CFGBlock *bt = cblock->succs[0], *bf = nullptr;
-            std::string
-                Ltrue = build_label(bt->id, "L_true"),
-                Lfalse = "L_return";
-            if(cblock->succs.size() > 1) {
+            std::string Ltrue = build_label(bt->id, "L_true"), Lfalse = "L_return";
+            if (cblock->succs.size() > 1) {
                 bf = cblock->succs[1];
                 Lfalse = build_label(bf->id, "L_false");
             }
@@ -356,10 +354,10 @@ struct CFG_Codegen {
         case cfg::BlockKind::Skip: {
             emit_comm("Skip");
             auto it = cond_labels.find(block->id);
-            if(it != cond_labels.end()) {
+            if (it != cond_labels.end()) {
                 emit_label(it->second);
             }
-            
+
             if (block->succs.size() == 0) {
                 emit_asm("j", "L_return");
             } else {
