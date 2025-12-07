@@ -179,6 +179,18 @@ int main(int argc, char* argv[]) {
         ana.print_equations(g);
         std::cout << std::endl << "Solutions:" << std::endl;
         ana.print_solution();
+
+        g.dce(ana);
+
+        std::ofstream cfg_dot_file(cfg_graph_path);
+
+        if (!cfg_dot_file) {
+            std::cerr << "Failed to open CFG output file: " << cfg_graph_path << "\n";
+            return 1;
+        }
+
+        cfg::print_cfg_dot(g, cfg_dot_file, SHOW_CFG_VARS);
+        cfg_dot_file.close();
     }
 
     /* Generate Code */

@@ -60,6 +60,7 @@ add_executable(wisc
     src/token.cpp
 
     # cfg managment
+    src/cfg.cpp
     src/cfg_builder.cpp 
     src/cfg_graphviz.cpp
     src/cfg_codegen.cpp
