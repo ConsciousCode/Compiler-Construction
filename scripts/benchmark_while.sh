@@ -4,6 +4,7 @@
 # Usage: ./benchmark_while.sh [build_dir]
 
 BUILD_DIR="${1:-build}"
+MISMATCH_FILE="benchmark_mismatches.txt"
 
 # Column width for the Program name column. If a program name exceeds
 # this, we'll truncate and append an ellipsis.
@@ -37,6 +38,13 @@ echo "                        WHILE Program Benchmark Suite"
 echo "================================================================================"
 echo ""
 
+# Initialize mismatch file
+> "$MISMATCH_FILE"
+echo "WHILE Program Benchmark - Output Mismatches" > "$MISMATCH_FILE"
+echo "Generated: $(date)" >> "$MISMATCH_FILE"
+echo "================================================================================" >> "$MISMATCH_FILE"
+echo "" >> "$MISMATCH_FILE"
+
 # Function to run a single test
 # Usage: run_test <program_name> <display_input> <args...>
 run_test() {
@@ -69,18 +77,18 @@ run_test() {
     else
     	status="✗"
 
-        echo
-    	echo "------------------------------------------------------------"
-    	echo " MISMATCH FOR: $program_name  input=($args)"
-    	echo "------------------------------------------------------------"
-    	echo "Expected output (C version):"
-    	echo "----------------------------"
-    	echo "$c_output"
-    	echo
-    	echo "Actual output (RISC-V version):"
-    	echo "-------------------------------"
-    	echo "$risc_output"
-    	echo
+        # Write mismatch to file instead of stdout
+    	echo "------------------------------------------------------------" >> "$MISMATCH_FILE"
+    	echo " MISMATCH FOR: $program_name  input=($args)" >> "$MISMATCH_FILE"
+    	echo "------------------------------------------------------------" >> "$MISMATCH_FILE"
+    	echo "Expected output (C version):" >> "$MISMATCH_FILE"
+    	echo "----------------------------" >> "$MISMATCH_FILE"
+    	echo "$c_output" >> "$MISMATCH_FILE"
+    	echo "" >> "$MISMATCH_FILE"
+    	echo "Actual output (RISC-V version):" >> "$MISMATCH_FILE"
+    	echo "-------------------------------" >> "$MISMATCH_FILE"
+    	echo "$risc_output" >> "$MISMATCH_FILE"
+    	echo "" >> "$MISMATCH_FILE"
     fi
 
     # Truncate program name if it's longer than PROG_COL and append '...'
@@ -98,66 +106,72 @@ printf "%-${PROG_COL}s | %-10s | %-12s | %-12s | %s\n" "Program" "Input" "RISC-V
 printf "%.s-" {1..75}
 echo ""
 
-# Fibonacci tests (Variables: a, b, n, output, t, z) - n is the input
-run_test fibonacci 10  0 1 10 0 0 0
-run_test fibonacci 40  0 1 40 0 0 0
-run_test fibonacci 80  0 1 80 0 0 0
-run_test fibonacci 160 0 1 160 0 0 0
+# Fibonacci tests - input: n
+run_test fibonacci 10  10
+run_test fibonacci 40  40
+run_test fibonacci 80  80
+run_test fibonacci 160 160
 
-# Factorial tests (Variables: output, x, y, z) - x is the input
-run_test factorial 3  0 3 0 0
-run_test factorial 5  0 5 0 0
-run_test factorial 8  0 8 0 0
-run_test factorial 13 0 13 0 0
+# Factorial tests - input: x
+run_test factorial 3  3
+run_test factorial 5  5
+run_test factorial 8  8
+run_test factorial 13 13
 
-# Collatz tests (Variables: a, b, n, output, t, z) - a is the input
-run_test collatz 6   6 0 0 0 0 0
-run_test collatz 12  12 0 0 0 0 0
-run_test collatz 27  27 0 0 0 0 0
-run_test collatz 871 871 0 0 0 0 0
+# Collatz tests - input: input
+run_test collatz 6   6
+run_test collatz 12  12
+run_test collatz 27  27
+run_test collatz 871 871
 
-# Stress factorial tests (Variables: input, i, output, t, x, y, z) - first arg is the input
-run_test stress_factorial 8  8 0 0 0 0 0 0
-run_test stress_factorial 10 10 0 0 0 0 0 0
-run_test stress_factorial 12 12 0 0 0 0 0 0
-run_test stress_factorial 14 14 0 0 0 0 0 0
+# Stress factorial tests - input: input
+run_test stress_factorial 8  8
+run_test stress_factorial 10 10
+run_test stress_factorial 12 12
 
-# add (no input required in-file, pass a few initial vars)
-run_test add n/a 0 1 2 0
+# add - no live inputs
+run_test add
 
+# closest_prime - input: input
+run_test closest_prime 5 5
 
-# closest_prime (single input)
-run_test closest_prime 5 5 0 0 0 0 0
-
-# comparatornetwork_bestknown_for_11 (expects 11 inputs w0..w10)
+# comparatornetwork_bestknown_for_11 - inputs: w0..w10
 run_test comparatornetwork_bestknown_for_11 desc 11 10 9 8 7 6 5 4 3 2 1
 
-# countTriangularNumbers (provide goUpToNumber and common initial vars)
-run_test countTriangularNumbers 100 0 100 0 0 1 0 0
+# countTriangularNumbers - input: goUpToNumber
+run_test countTriangularNumbers 100 100
 
-# loop (n, output)
-run_test loop 5 5 0
+# loop - input: n
+run_test loop 5 5
 
-# madprimes (large test; provide primary W and some zeros)
-run_test madprimes 50 50 0 0 0 0 0 0 0 0 0
+# madprimes - input: W
+run_test madprimes 50 50
 
-# primescounter (range)
-run_test primescounter 100 100 0 0 0
+# primescounter - input: range
+run_test primescounter 100 100
 
-# stress_gcd_mod and stress_gcd_sub (two inputs: a and b)
-run_test stress_gcd_mod 1234567 1234567 7654321 0
-run_test stress_gcd_sub 1234567 1234567 7654321 0
+# stress_gcd_mod and stress_gcd_sub - inputs: input, input2
+run_test stress_gcd_mod 1234567 1234567 7654321
+run_test stress_gcd_sub 1234567 1234567 7654321
 
-# stress_prime_count (n)
-run_test stress_prime_count 50 50 0 0 0
+# stress_prime_count - input: n
+run_test stress_prime_count 50 50
 
-# sumfactors (N)
-run_test sumfactors 20 20 0 0 0
+# sumfactors - input: N
+run_test sumfactors 20 20
 
 printf "%.s-" {1..75}
 echo ""
 echo "Benchmark Complete"
 echo ""
+
+# Report mismatch file location if there were any mismatches
+if [ -s "$MISMATCH_FILE" ] && [ $(wc -l < "$MISMATCH_FILE") -gt 4 ]; then
+    echo -e "${RED}Mismatches detected! Details written to: $MISMATCH_FILE${NC}"
+else
+    echo -e "${GREEN}All tests passed!${NC}"
+    rm -f "$MISMATCH_FILE"
+fi
 
 # Cleanup
 rm -f /tmp/risc_output /tmp/c_output
