@@ -50,3 +50,4 @@ _deps/
 
 /*.s
 .vscode
+/*.dot

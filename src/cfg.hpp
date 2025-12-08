@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+struct FlowAnalysis;
+
 namespace cfg {
 
 enum class BlockKind { Assignment, Condition, Skip };
@@ -54,11 +56,11 @@ struct CFG {
     CFGBlock* entry{nullptr};
     CFGBlock* exit{nullptr};
 
-    void add_edge(CFGBlock* from, CFGBlock* to) {
-        if (!from || !to)
-            return;
-        from->succs.push_back(to);
-        to->preds.push_back(from);
-    }
+    void add_edge(CFGBlock* from, CFGBlock* to);
+
+    /**
+     * Perform Dead Code Elimination, specifically dead assignments
+    **/
+    void dce(FlowAnalysis& ana);
 };
 } // namespace cfg
