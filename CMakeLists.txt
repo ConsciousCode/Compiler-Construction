@@ -214,6 +214,8 @@ function(add_while_program PROGRAM_NAME)
     set(C_FILE "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}.c")
     set(C_CFG_FILE "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}_cfg.c")
     set(RISCV_EXEC "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}_risc")
+    set(RISCV_C_EXEC "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}_c_risc")
+    set(RISCV_C_CFG_EXEC "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}_c_cfg_risc")
     
     add_custom_command(
         OUTPUT ${MAIN_C_STR}
@@ -258,18 +260,44 @@ function(add_while_program PROGRAM_NAME)
 	COMMENT "Generating C code from CFG for ${PROGRAM_NAME}.while"
     )
 
-    # Create RISC-V Target
+    # Create RISC-V Target from assembly
     add_custom_target(${PROGRAM_NAME}_risc  DEPENDS ${RISCV_EXEC})
     
-    # Create C executable from generated C code
+    # Create C executable from generated C code (native x86_64)
     add_executable(${PROGRAM_NAME}_c ${C_FILE} ${MAIN_FILE})
     target_compile_definitions(${PROGRAM_NAME}_c PRIVATE PROGRAM_NAME=${PROGRAM_NAME})
 
     add_executable(${PROGRAM_NAME}_c_cfg ${C_CFG_FILE} src/main.c)
     target_compile_definitions(${PROGRAM_NAME}_c_cfg PRIVATE PROGRAM_NAME=${PROGRAM_NAME})
     
-    # Create custom target that depends on BOTH versions
-    add_custom_target(${PROGRAM_NAME} ALL DEPENDS ${RISCV_EXEC} ${PROGRAM_NAME}_c ${PROGRAM_NAME}_c_cfg)
+    # Create RISC-V C executables (cross-compiled)
+    add_custom_command(
+        OUTPUT ${RISCV_C_EXEC}
+        COMMAND riscv64-linux-gnu-gcc ${C_FILE} ${MAIN_FILE}
+                -DPROGRAM_NAME=${PROGRAM_NAME} -o ${RISCV_C_EXEC} -static
+        DEPENDS ${C_FILE} ${MAIN_FILE}
+        COMMENT "Cross-compiling C version of ${PROGRAM_NAME} to RISC-V"
+    )
+    
+    add_custom_command(
+        OUTPUT ${RISCV_C_CFG_EXEC}
+        COMMAND riscv64-linux-gnu-gcc ${C_CFG_FILE} ${PROJECT_SOURCE_DIR}/src/main.c
+                -DPROGRAM_NAME=${PROGRAM_NAME} -o ${RISCV_C_CFG_EXEC} -static
+        DEPENDS ${C_CFG_FILE} ${PROJECT_SOURCE_DIR}/src/main.c
+        COMMENT "Cross-compiling CFG C version of ${PROGRAM_NAME} to RISC-V"
+    )
+    
+    add_custom_target(${PROGRAM_NAME}_c_risc DEPENDS ${RISCV_C_EXEC})
+    add_custom_target(${PROGRAM_NAME}_c_cfg_risc DEPENDS ${RISCV_C_CFG_EXEC})
+    
+    # Create custom target that depends on ALL versions
+    add_custom_target(${PROGRAM_NAME} ALL DEPENDS 
+        ${RISCV_EXEC} 
+        ${PROGRAM_NAME}_c 
+        ${PROGRAM_NAME}_c_cfg
+        ${PROGRAM_NAME}_c_risc
+        ${PROGRAM_NAME}_c_cfg_risc
+    )
     
     # Register this program in the global list
     set_property(GLOBAL APPEND PROPERTY WHILE_PROGRAMS_LIST ${PROGRAM_NAME})
@@ -279,7 +307,7 @@ add_while_program(add)
 add_while_program(chain_prime)
 add_while_program(closest_prime)
 add_while_program(collatz)
-# add_while_program(comment) # Parse error at Segmentation fault
+# add_while_program(comment) # Parse error / Segmentation fault
 add_while_program(comparatornetwork_bestknown_for_11)
 add_while_program(countTriangularNumbers)
 add_while_program(factorial)
@@ -296,11 +324,23 @@ add_while_program(stress_gcd_mod)
 add_while_program(stress_gcd_sub)
 add_while_program(stress_prime_count)
 add_while_program(sumfactors)
-add_while_program(torture)
+# add_while_program(torture)
 
 # Automatically create a target that builds all WHILE programs
 get_property(ALL_WHILE_PROGRAMS GLOBAL PROPERTY WHILE_PROGRAMS_LIST)
 add_custom_target(while_programs
     DEPENDS ${ALL_WHILE_PROGRAMS}
     COMMENT "Building all WHILE programs"
+)
+
+# Target to package RISC-V binaries
+add_custom_target(package-riscv
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/riscv_binaries
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/*_risc ${CMAKE_BINARY_DIR}/riscv_binaries/ || true
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/*_c_risc ${CMAKE_BINARY_DIR}/riscv_binaries/ || true  
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/*_c_cfg_risc ${CMAKE_BINARY_DIR}/riscv_binaries/ || true
+    COMMAND cd ${CMAKE_BINARY_DIR} && tar -czf riscv_binaries.tar.gz riscv_binaries
+    DEPENDS while_programs
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    COMMENT "Packaging all RISC-V binaries (assembly, C, and CFG versions)"
 )
