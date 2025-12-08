@@ -16,11 +16,39 @@ cmake -S . -B build
 cmake --build build -j
 ```
 
+This builds:
+- The `wisc` compiler executable
+- All example WHILE programs in multiple formats:
+  - RISC-V assembly (`.s` files)
+  - RISC-V executables (assembly + C versions)
+  - Native executables (C AST and C CFG versions)
+
+**Build outputs are organized in:** `build/while_progs/`
+- `asm/` - RISC-V assembly files
+- `c_code/` - Generated C code (AST and CFG versions)
+- `bin/riscv64/` - RISC-V executables
+- `bin/x86_64/` (or `bin/aarch64/`) - Native architecture executables
+
 ## Quick Start
 
-1. Compile a `.while` source file to RISC-V assembly:
+1. Build the compiler and all example programs:
 ```bash
-wisc <input_file>
+cmake -S . -B build
+cmake --build build --target while_programs
+```
+
+2. Run an example program:
+```bash
+# Native C version (fastest)
+./build/while_progs/bin/x86_64/fibonacci_c 10
+
+# RISC-V version (requires qemu-riscv64 on non-RISC-V systems)
+qemu-riscv64 ./build/while_progs/bin/riscv64/fibonacci_risc 10
+```
+
+3. Or compile a custom `.while` file to RISC-V assembly:
+```bash
+./build/wisc examples/while/yourfile.while -o output.s
 ```
 ## Command Line Reference for `wisc`
 
@@ -59,13 +87,13 @@ Multiple flags may be combined.
 Examples:
 ```bash
 # Generate assembly to custom file
-wisc examples/fib.while -o fibonacci.s
+wisc examples/while/fibonacci.while -o fibonacci.s
 
 # Generate AST graph to custom file
-wisc examples/fib.while -ga fib_ast.dot
+wisc examples/while/fibonacci.while -ga fib_ast.dot
 
 # Generate parse tree graph (uses default parse_tree.dot)
-wisc examples/fib.while -gpt
+wisc examples/while/fibonacci.while -gpt
 ```
 
 ---
@@ -77,45 +105,46 @@ wisc examples/fib.while -gpt
 
 Example:
 ```bash
-wisc examples/loop.while -gc loop_cfg.dot -sv
+wisc examples/while/loop.while -gc loop_cfg.dot -sv
 ```
-
-2. Run the generated assembly on a RISC-V machine (see examples below)
 
 ## Running Examples
 
-Each example requires specific variable initialization. Variables are passed as command-line arguments in the order specified.
+Each compiled program requires initialization of its **live-in variables** (variables that must be provided as input). The compiler performs flow analysis to determine which variables need to be passed as arguments. Other variables are automatically initialized to appropriate values.
 
 ### Fibonacci
-Computes Fibonacci sequence.
+Computes the nth Fibonacci number.
 
-**Variables:** `a, b, n, output, t, z`
+**Live-in variables:** `n`
 ```bash
-gcc fibonacci.s ./test/main.c -DPROGRAM_NAME=fibonacci -o run_fib
-./run_fib 0 1 10 0 0 0
+cd build/while_progs/bin/x86_64  # or bin/riscv64 for RISC-V
+./fibonacci_c 10        # Computes 10th Fibonacci number
+./fibonacci_c 40        # Computes 40th Fibonacci number
 ```
 
 ### Factorial
 Computes factorial of a number.
 
-**Variables:** `output, x, y, z`
+**Live-in variables:** `x`
 ```bash
-gcc factorial.s ./test/main.c -DPROGRAM_NAME=factorial -o run_fact
-./run_fact 0 5 0 0
+./factorial_c 5         # Computes 5!
+./factorial_c 13        # Computes 13!
 ```
 
 ### Collatz Conjecture
-**Variables:** `a, b, n, output, t, z`
+Computes the number of steps in the Collatz sequence.
+
+**Live-in variables:** `input`
 ```bash
-gcc collatz.s ./test/main.c -DPROGRAM_NAME=collatz -o run_clz
-./run_clz 10 0 0 0 0 0
+./collatz_c 27          # Collatz sequence starting from 27
+./collatz_c 871         # Collatz sequence starting from 871
 ```
 
 ### Stress Test: Factorial
-**Variables:** `input, i, output, t, x, y, z`
+**Live-in variables:** `input`
 ```bash
-gcc stress_factorial.s ./test/main.c -DPROGRAM_NAME=stress_factorial -o run_sfact
-./run_sfact 0 5 0 0 0 0 0
+./stress_factorial_c 8
+./stress_factorial_c 12
 ```
 
 ## Development Tools
@@ -394,10 +423,10 @@ exit:
 
 #### Running Generated C Code
 
-The generated C Code can be utilized in the same for as the RISC-V Assembly by including it in compilation as follows:
+The generated C code can be utilized in the same way as the RISC-V assembly by including it in compilation as follows:
 ```bash
-gcc factorial.c ./src/main.c -DPROGRAM_NAME=factorial -o run_fact
-./run_fact 0 5 0 0
+gcc factorial.c ./build/while_progs/c_code/factorial_main.c -o run_fact
+./run_fact 5        # Only pass live-in variable: x
 ```
 
 Alternatively, the example programs are defined as targets in the `CMakeLists.txt` file and can be built directly with CMake.
@@ -405,9 +434,11 @@ Alternatively, the example programs are defined as targets in the `CMakeLists.tx
 ```bash
 cmake -S . -B build
 cmake --build build --target factorial_c        # AST version
-./build/factorial_c 0 5 0 0                     # Run the program
+./build/while_progs/bin/x86_64/factorial_c 5    # Run with live-in variable
 cmake --build build --target factorial_c_cfg    # CFG version
-./build/factorial_c_cfg 0 5 0 0
+./build/while_progs/bin/x86_64/factorial_c_cfg 5
 ```
 
-This will produce a runnable executable (e.g. `./factorial_c`) with the `main.c` runner already linked. 
+This will produce a runnable executable (e.g. `./factorial_c`) with the `main.c` runner already linked.
+
+**Note:** The compiler automatically generates a main file for each program that knows which variables are live-in. You only need to provide values for these live-in variables as command-line arguments. 
