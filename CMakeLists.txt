@@ -42,6 +42,8 @@ FetchContent_MakeAvailable(argparse)
 
 add_executable(wisc 
     src/main.cpp
+
+    src/main.c.str
     
     src/graphviz.cpp
 
@@ -195,13 +197,23 @@ set_property(GLOBAL PROPERTY WHILE_PROGRAMS_LIST "")
 function(add_while_program PROGRAM_NAME)
     set(WHILE_FILE "${PROJECT_SOURCE_DIR}/examples/while/${PROGRAM_NAME}.while")
     set(ASM_FILE "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}.s")
+    set(MAIN_FILE "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}_main.c")
+    set(MAIN_C_STR "${PROJECT_SOURCE_DIR}/src/main.c.str")
     set(C_FILE "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}.c")
     set(RISCV_EXEC "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}_risc")
     
+    add_custom_command(
+        OUTPUT ${MAIN_C_STR}
+        DEPENDS ${PROJECT_SOURCE_DIR}/src/main.c
+        COMMAND ${PROJECT_SOURCE_DIR}/scripts/build_main_str.sh < ${PROJECT_SOURCE_DIR}/src/main.c > ${MAIN_C_STR}
+    )
+
     # Custom command to generate assembly from WHILE code
     add_custom_command(
         OUTPUT ${ASM_FILE}
-        COMMAND wisc ${WHILE_FILE} -o ${ASM_FILE}
+        OUTPUT ${MAIN_FILE}
+        COMMAND wisc ${WHILE_FILE} -o ${ASM_FILE} -m ${MAIN_FILE}
+        DEPENDS ${MAIN_C_STR}
         DEPENDS ${WHILE_FILE}
         DEPENDS wisc
         COMMENT "Compiling ${PROGRAM_NAME}.while to RISC-V assembly"
@@ -210,9 +222,9 @@ function(add_while_program PROGRAM_NAME)
     # Custom command to build the RISC-V executable
     add_custom_command(
         OUTPUT ${RISCV_EXEC}
-        COMMAND riscv64-linux-gnu-gcc ${ASM_FILE} ${PROJECT_SOURCE_DIR}/src/main.c 
+        COMMAND riscv64-linux-gnu-gcc ${ASM_FILE} ${MAIN_FILE} 
                 -DPROGRAM_NAME=${PROGRAM_NAME} -o ${RISCV_EXEC} -static
-        DEPENDS ${ASM_FILE} ${PROJECT_SOURCE_DIR}/src/main.c
+        DEPENDS ${ASM_FILE} ${MAIN_FILE}
         COMMENT "Linking ${PROGRAM_NAME} with RISC-V toolchain"
     )
     
@@ -229,7 +241,7 @@ function(add_while_program PROGRAM_NAME)
     add_custom_target(${PROGRAM_NAME}_risc  DEPENDS ${RISCV_EXEC})
     
     # Create C executable from generated C code
-    add_executable(${PROGRAM_NAME}_c ${C_FILE} src/main.c)
+    add_executable(${PROGRAM_NAME}_c ${C_FILE} ${MAIN_FILE})
     target_compile_definitions(${PROGRAM_NAME}_c PRIVATE PROGRAM_NAME=${PROGRAM_NAME})
     
     # Create custom target that depends on BOTH versions

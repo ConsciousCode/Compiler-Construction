@@ -443,6 +443,17 @@ struct CFG_Codegen {
 
         emit_label("L_return");
 
+        auto out = name_offsets.find("output");
+        if(out != name_offsets.end()) {
+            std::string reg = var_reg("output");
+            if(reg.empty()) {
+                emit_asm("ld", "a0", var_addr("output"));
+            }
+            else {
+                emit_asm("mv", "a0", reg);
+            }
+        }
+
         // Undo the stack allocation
         emit_line("addi sp, sp, " + std::to_string(max_depth * 8));
 

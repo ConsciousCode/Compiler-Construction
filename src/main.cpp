@@ -3,17 +3,20 @@
 #include "cfg_codegen.hpp"
 #include "cfg_graphviz.hpp"
 #include "codegen.hpp"
+#include "collect_vars.hpp"
 #include "graphviz.hpp"
 #include "parser.hpp"
 #include "scanner.hpp"
 #include "while_parser.hpp"
 #include "flow.hpp"
 #include "reg_alloc.hpp"
+#include <assert.h>
 
 #include <argparse/argparse.hpp>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -23,6 +26,7 @@ int main(int argc, char* argv[]) {
     /* Core Compiler Args */
     prog.add_argument("input").help("Input file");
     prog.add_argument("-o", "--output").help("Output file for Assembly").default_value("out.s");
+    prog.add_argument("-m", "--main").help("Output file for main harness").default_value("main.c");
 
     /* Print Scanner Tokens*/
     prog.add_argument("-pt", "--print-tokens")
@@ -61,6 +65,7 @@ int main(int argc, char* argv[]) {
     std::filesystem::path input_path(prog.get<std::string>("input"));
     std::string program_name = input_path.stem().string();
     std::filesystem::path output_path(prog.get<std::string>("--output"));
+    std::filesystem::path main_path(prog.get<std::string>("--main"));
 
     const bool PRINT_TOKENS = prog.get<bool>("--print-tokens");
 
@@ -175,14 +180,13 @@ int main(int argc, char* argv[]) {
     }
 
     auto ana = flow_analysis(g, {"output"});
+    g.dce(ana);
 
     if(PRINT_FLOW) {
         std::cout << "Equations:" << std::endl;
         ana.print_equations(g);
         std::cout << std::endl << "Solutions:" << std::endl;
         ana.print_solution();
-
-        g.dce(ana);
 
         std::ofstream cfg_dot_file(cfg_graph_path);
 
@@ -219,6 +223,50 @@ int main(int argc, char* argv[]) {
     // output_file << out_code.riscv;
     output_file << cfg::cfg_codegen(g, program_name, alloc);
     output_file.close();
+
+    // Generate main harness
+    std::ofstream main_file(main_path);
+
+    if (!output_file) {
+        std::cerr << "Failed to open main output file: " << output_path << "\n";
+        return 1;
+    }
+
+    assert(g.entry != nullptr);
+    std::map<std::string, size_t> live_entries;
+    std::set<std::string> varset;
+    std::map<std::string, size_t> varoff;
+
+    collect_vars(*ast.get_root(), varset);
+
+    size_t i = 0;
+    for(const auto& var : varset) {
+        varoff[var] = i++;
+    }
+
+    for(const auto& live : ana.lv[g.entry->id].entry) {
+        live_entries[live] = varoff[live];
+    }
+
+    // Output main defines
+
+    main_file << "#define VAR_COUNT " << varset.size();
+    main_file << "\n#define LIVE_NAMES ";
+
+    for (const auto& [var, off] : live_entries) {
+        main_file << '"' << var << "\", ";
+    }
+
+    main_file << "\n#define LIVE_OFFS ";
+    for (const auto& [var, off] : live_entries) {
+        main_file << varoff[var] << ", ";
+    }
+
+    main_file << "\n#define PROGRAM_NAME " << program_name << std::endl;
+    main_file <<
+        #include "main.c.str"
+    ;
+    main_file.close();
 
     return 0;
 }

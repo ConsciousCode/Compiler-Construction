@@ -48,8 +48,6 @@ void CFG::dce(FlowAnalysis& fa) {
             continue;
         }
 
-        printf("Dead %s %ld\n", ablock->lhs.c_str(), block->succs.size());
-
         // It must be dead
 
         if(entry == pblock) {
@@ -69,7 +67,6 @@ void CFG::dce(FlowAnalysis& fa) {
                 for_all(pred->succs, pblock, [&](auto&& it) {
                     pred->succs.erase(it);
                 });
-                printf("Erase\n");
             }
 
             if(entry == pblock) {
@@ -101,7 +98,6 @@ void CFG::dce(FlowAnalysis& fa) {
                 for_all(pred->succs, pblock, [&](auto&& it) {
                     *it = succ;
                 });
-                printf("Assign\n");
             }
 
             // Remove from succ
