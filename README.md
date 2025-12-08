@@ -51,6 +51,10 @@ Multiple flags may be combined.
 |Flag|Short|Description|
 |---|---|---|
 |`--output <file>`|`-o`|Write RISC-V assembly to `<file>` (default: `out.s`).|
+| `--c-code` | `-cc` | Generate equivalent c-code *instead* of RISC-V Assembly file. |
+| `--c-source <source_name>` | | Logical source of C Code Generation (options: [`ast`, `cfg`], default: `ast`) |
+
+> Note: See *Graduate Exercise* Section below for more info on C-Code Generation
 
 Examples:
 ```bash
@@ -279,3 +283,131 @@ Compiler-Project-1
 ├─ src/                                            // Source Code
 └─ test/                                           // Contains binary assembly files for some example while programs
 ```
+---
+### Equivalent C Code Generation
+> Implemented by Nicholas Livingstone for the Graduate Exercise Assignment.
+> 
+> Acknowledgement: Robert McDaniels created some AST to C Code logic that was developed during an earlier phase of the project for testing. Some of his original code was utilized and polished here. 
+
+The *wisc* compiler has the ability to produce equivalent `*.c` files for a given WHILE program.
+When creating the equivalent file, the *wisc* compiler **will not** output the RISC-V assembly.
+
+#### From AST
+```bash
+wisc ./examples/while/collatz.while -cc --c-source ast -o collatz.c
+```
+> Note: `ast` arg can be ommitted as it is the default. For additional argument info see *Output Flags* section above.
+
+will produce:
+```c
+#include <stdint.h>
+void collatz(int64_t vars[]) {
+    int64_t input = vars[0], n = vars[1], output = vars[2], quot = vars[3], rem = vars[4], steps = vars[5];
+    n = input;
+    steps = 0;
+    while (n>1) {
+        rem = n;
+        quot = 0;
+        while (rem>1) {
+            rem = rem-2;
+            quot = quot+1;
+        }
+
+        if (rem==0) {
+            n = quot;
+        }
+        else {
+            n = (3*n)+1;
+        }
+
+        steps = steps+1;
+    }
+
+    output = steps;
+    vars[0] = input;
+    vars[1] = n;
+    vars[2] = output;
+    vars[3] = quot;
+    vars[4] = rem;
+    vars[5] = steps;
+}
+```
+
+#### From CFG
+For CFG conversion, we produce a different code output which utilizes `goto` and labels in C. 
+```bash
+wisc ./examples/while/collatz.while -cc --c-source cfg -o collatz.c
+```
+Will produce:
+```c
+#include <stdint.h>
+void collatz(int64_t vars[]) {
+    int64_t input = vars[0], n = vars[1], output = vars[2], quot = vars[3], rem = vars[4], steps = vars[5];
+label_0:
+    n = input;
+    goto label_1;
+label_1:
+    steps = 0;
+    goto label_2;
+label_2:
+    if (n>1) goto label_3;
+    else goto label_12;
+label_3:
+    rem = n;
+    goto label_4;
+label_4:
+    quot = 0;
+    goto label_5;
+label_5:
+    if (rem>1) goto label_6;
+    else goto label_8;
+label_6:
+    rem = rem-2;
+    goto label_7;
+label_7:
+    quot = quot+1;
+    goto label_5;
+label_8:
+    if (rem==0) goto label_9;
+    else goto label_10;
+label_9:
+    n = quot;
+    goto label_11;
+label_10:
+    n = (3*n)+1;
+    goto label_11;
+label_11:
+    steps = steps+1;
+    goto label_2;
+label_12:
+    output = steps;
+    goto exit;
+exit:
+    vars[0] = input;
+    vars[1] = n;
+    vars[2] = output;
+    vars[3] = quot;
+    vars[4] = rem;
+    vars[5] = steps;
+}
+```
+
+#### Running Generated C Code
+
+The generated C Code can be utilized in the same for as the RISC-V Assembly by including it in compilation as follows:
+```bash
+gcc factorial.c ./src/main.c -DPROGRAM_NAME=factorial -o run_fact
+./run_fact 0 5 0 0
+```
+
+Alternatively, the example programs are defined as targets in the `CMakeLists.txt` file and can be built directly with CMake.
+
+```bash
+cmake -S . -B build
+cmake --build build --target factorial_c        # AST version
+./build/factorial_c 0 5 0 0                     # Run the program
+cmake --build build --target factorial_c_cfg    # CFG version
+./build/factorial_c_cfg 0 5 0 0
+```
+
+This will produce a runnable executable (e.g. `./factorial_c`) with the `main.c` runner already linked. 

@@ -68,6 +68,8 @@ add_executable(wisc
     src/cfg_graphviz.cpp
     src/cfg_codegen.cpp
     src/flow.cpp
+    src/ast.cpp
+    src/cgen.cpp
 )
 target_compile_options(wisc PRIVATE -fexceptions)
 
@@ -91,6 +93,9 @@ add_executable(
     src/while_parser.cpp
     src/scanner.cpp
     src/token.cpp
+    src/ast.cpp
+    src/cgen.cpp
+    src/collect_vars.cpp
 )
 
 add_executable(
@@ -103,6 +108,9 @@ add_executable(
     src/while_parser.cpp
     src/scanner.cpp
     src/token.cpp
+    src/ast.cpp
+    src/cgen.cpp
+    src/collect_vars.cpp
 )
 target_include_directories(parser_example PRIVATE src)
 
@@ -117,7 +125,9 @@ add_executable(
 
 add_executable(
     cgen
+    src/cgen_main.cpp
     src/cgen.cpp
+    src/ast.cpp
     src/collect_vars.cpp
 
     # Parser + scanner
@@ -141,6 +151,8 @@ add_executable(
     src/while_parser.cpp
     src/scanner.cpp
     src/token.cpp
+    src/ast.cpp
+    src/cgen.cpp
 )
 ]]
 
@@ -200,6 +212,7 @@ function(add_while_program PROGRAM_NAME)
     set(MAIN_FILE "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}_main.c")
     set(MAIN_C_STR "${PROJECT_SOURCE_DIR}/src/main.c.str")
     set(C_FILE "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}.c")
+    set(C_CFG_FILE "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}_cfg.c")
     set(RISCV_EXEC "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}_risc")
     
     add_custom_command(
@@ -231,10 +244,18 @@ function(add_while_program PROGRAM_NAME)
     # Custom command to generate C code from WHILE code
     add_custom_command(
         OUTPUT ${C_FILE}
-        COMMAND cgen ${WHILE_FILE} > ${C_FILE}
+        COMMAND wisc ${WHILE_FILE} -cc -o ${C_FILE}
         DEPENDS ${WHILE_FILE}
-        DEPENDS cgen
-        COMMENT "Generating C code for ${PROGRAM_NAME}.while"
+        DEPENDS wisc
+	COMMENT "Generating C code from AST for ${PROGRAM_NAME}.while"
+    )
+
+    add_custom_command(
+	OUTPUT ${C_CFG_FILE}
+	COMMAND wisc ${WHILE_FILE} -cc --c-source cfg -o ${C_CFG_FILE}
+        DEPENDS ${WHILE_FILE}
+        DEPENDS wisc
+	COMMENT "Generating C code from CFG for ${PROGRAM_NAME}.while"
     )
 
     # Create RISC-V Target
@@ -243,9 +264,12 @@ function(add_while_program PROGRAM_NAME)
     # Create C executable from generated C code
     add_executable(${PROGRAM_NAME}_c ${C_FILE} ${MAIN_FILE})
     target_compile_definitions(${PROGRAM_NAME}_c PRIVATE PROGRAM_NAME=${PROGRAM_NAME})
+
+    add_executable(${PROGRAM_NAME}_c_cfg ${C_CFG_FILE} src/main.c)
+    target_compile_definitions(${PROGRAM_NAME}_c_cfg PRIVATE PROGRAM_NAME=${PROGRAM_NAME})
     
     # Create custom target that depends on BOTH versions
-    add_custom_target(${PROGRAM_NAME} ALL DEPENDS ${RISCV_EXEC} ${PROGRAM_NAME}_c)
+    add_custom_target(${PROGRAM_NAME} ALL DEPENDS ${RISCV_EXEC} ${PROGRAM_NAME}_c ${PROGRAM_NAME}_c_cfg)
     
     # Register this program in the global list
     set_property(GLOBAL APPEND PROPERTY WHILE_PROGRAMS_LIST ${PROGRAM_NAME})
