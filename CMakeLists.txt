@@ -196,10 +196,20 @@ if(GIT_FOUND)
     add_custom_target(source-archive
         COMMAND ${GIT_EXECUTABLE} archive --format=tar 
                 --prefix=${PROJECT_NAME}-${PROJECT_VERSION}/ 
-                -o ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${PROJECT_VERSION}.tar 
+                -o ${CMAKE_BINARY_DIR}/source.tar 
                 HEAD
+        COMMAND ${CMAKE_COMMAND} -E tar cf ${CMAKE_BINARY_DIR}/while_progs.tar 
+                --format=pax
+                ${CMAKE_BINARY_DIR}/while_progs
+        COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_BINARY_DIR} 
+                tar --concatenate --file=source.tar while_progs.tar
+        COMMAND ${CMAKE_COMMAND} -E rename 
+                ${CMAKE_BINARY_DIR}/source.tar
+                ${CMAKE_BINARY_DIR}/${PROJECT_NAME}-${PROJECT_VERSION}.tar
+        COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_BINARY_DIR}/while_progs.tar
+        DEPENDS while_programs
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        COMMENT "Creating source archive"
+        COMMENT "Creating source archive with compiled WHILE programs"
     )
 endif()
 
