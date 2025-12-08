@@ -247,7 +247,7 @@ int main(int argc, char* argv[]) {
         case C_GEN_SOURCE::CFG: {
             std::set<std::string> vars;
             collect_vars(*ast.get_root(), vars);
-            c_output_file << g.to_c(program_name,vars);
+            c_output_file << g.to_c(program_name, vars, ana);
             break;
         }
         default:

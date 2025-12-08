@@ -298,7 +298,7 @@ function(add_while_program PROGRAM_NAME)
         RUNTIME_OUTPUT_DIRECTORY ${NATIVE_BIN_DIR}
     )
 
-    add_executable(${PROGRAM_NAME}_c_cfg ${C_CFG_FILE} src/main.c)
+    add_executable(${PROGRAM_NAME}_c_cfg ${C_CFG_FILE} ${MAIN_FILE})
     target_compile_definitions(${PROGRAM_NAME}_c_cfg PRIVATE PROGRAM_NAME=${PROGRAM_NAME})
     set_target_properties(${PROGRAM_NAME}_c_cfg PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${NATIVE_BIN_DIR}
@@ -315,9 +315,9 @@ function(add_while_program PROGRAM_NAME)
     
     add_custom_command(
         OUTPUT ${RISCV_C_CFG_EXEC}
-        COMMAND riscv64-linux-gnu-gcc ${C_CFG_FILE} ${PROJECT_SOURCE_DIR}/src/main.c
+        COMMAND riscv64-linux-gnu-gcc ${C_CFG_FILE} ${MAIN_FILE}
                 -DPROGRAM_NAME=${PROGRAM_NAME} -o ${RISCV_C_CFG_EXEC} -static
-        DEPENDS ${C_CFG_FILE} ${PROJECT_SOURCE_DIR}/src/main.c
+        DEPENDS ${C_CFG_FILE} ${MAIN_FILE}
         COMMENT "Cross-compiling CFG C version of ${PROGRAM_NAME} to RISC-V"
     )
     

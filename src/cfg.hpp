@@ -75,6 +75,6 @@ struct CFG {
     void dce(FlowAnalysis& ana);
 
     std::string generate_control_flow(CFGBlock* block) const;
-    std::string to_c(const std::string& prog_name, std::set<std::string> vars) const;
+    std::string to_c(const std::string& prog_name, std::set<std::string> vars, const FlowAnalysis& ana) const;
 };
 } // namespace cfg

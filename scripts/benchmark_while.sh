@@ -63,7 +63,7 @@ run_test() {
     esac
     
     local risc_exec="${BUILD_DIR}/while_progs/bin/riscv64/${program_name}_risc"
-    local c_exec="${BUILD_DIR}/while_progs/bin/${NATIVE_ARCH}/${program_name}_c_cfg"
+    local c_exec="${BUILD_DIR}/while_progs/bin/${NATIVE_ARCH}/${program_name}_c"
     
     # Check if executables exist
     if [ ! -f "$risc_exec" ] || [ ! -f "$c_exec" ]; then

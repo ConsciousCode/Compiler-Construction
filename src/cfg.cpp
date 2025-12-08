@@ -157,16 +157,27 @@ std::string SkipBlock::to_c([[maybe_unused]] const ast::CodeGenContext& ctx) con
     return ""; // Skip does nothing
 }
 
-std::string CFG::to_c(const std::string& prog_name, std::set<std::string> vars) const {
+std::string CFG::to_c(const std::string& prog_name, std::set<std::string> vars, const FlowAnalysis& ana) const {
 
     std::string result =
         "#include <stdint.h>\nint64_t " + prog_name + "(int64_t vars[]) {\n" + "    int64_t ";
+
+    // Get live-in variables for entry block
+    std::set<std::string> live_in;
+    if (entry != nullptr && ana.lv.count(entry->id)) {
+        live_in = ana.lv.at(entry->id).entry;
+    }
 
     int index = 0;
     for (const auto& var : vars) {
         if (index > 0)
             result += ", ";
-        result += cgen::mangle(var) + " = vars[" + std::to_string(index) + "]";
+        // Only initialize from vars[] if it's live-in, otherwise initialize to 0
+        if (live_in.count(var)) {
+            result += cgen::mangle(var) + " = vars[" + std::to_string(index) + "]";
+        } else {
+            result += cgen::mangle(var) + " = 0";
+        }
         ++index;
     }
     result += ";\n";
