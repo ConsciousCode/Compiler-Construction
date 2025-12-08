@@ -70,17 +70,11 @@ struct CFG_Codegen {
     int max_depth;
     std::map<std::string, int> name_offsets;
     std::map<size_t, std::string> cond_labels;
-    std::map<std::string, size_t> regs; // Register allocations
-    std::map<std::string, size_t> spill; // Variables spilled to stack
     std::set<size_t> seen_ids;
     std::string program_name;
     Emitter emit;
 
-    CFG_Codegen(
-            const cfg::CFG& cfg, const std::string& prog,
-            const std::map<std::string, size_t>& regs,
-            const std::map<std::string, size_t> spill
-    ) : regs(regs), spill(spill) {
+    CFG_Codegen(const cfg::CFG& cfg, const std::string& prog){
         std::set<std::string> varset;
         program_name = prog;
         max_depth = 0;
@@ -117,7 +111,7 @@ struct CFG_Codegen {
 
         name_offsets.clear();
         for (const auto& [name, slot] : g_alloc.var_to_slot) {
-            name_offsets[name] = slot;
+            name_offsets[name] = static_cast<int>(slot);
         }
     }
 
