@@ -3,6 +3,7 @@
 #include "cfg_codegen.hpp"
 #include "cfg_graphviz.hpp"
 #include "codegen.hpp"
+#include "collect_vars.hpp"
 #include "graphviz.hpp"
 #include "parser.hpp"
 #include "scanner.hpp"
@@ -14,8 +15,22 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 #include <vector>
+
+enum class C_GEN_SOURCE { AST, CFG };
+
+std::map<std::string, C_GEN_SOURCE> cgen_source_map{{"ast", C_GEN_SOURCE::AST},
+                                                    {"cfg", C_GEN_SOURCE::CFG}};
+
+C_GEN_SOURCE stringToCGenSource(const std::string& str) {
+    auto it = cgen_source_map.find(str);
+    if (it != cgen_source_map.end()) {
+        return it->second;
+    }
+    throw std::runtime_error("Invalid C Generation Source");
+}
 
 int main(int argc, char* argv[]) {
     argparse::ArgumentParser prog("wisc");
@@ -23,6 +38,11 @@ int main(int argc, char* argv[]) {
     /* Core Compiler Args */
     prog.add_argument("input").help("Input file");
     prog.add_argument("-o", "--output").help("Output file for Assembly").default_value("out.s");
+    prog.add_argument("-cc", "--c-code").help("Generate equivalent c code").flag();
+    prog.add_argument("--c-source")
+        .help("C code generation source")
+        .default_value(std::string{"ast"})
+        .choices("ast", "cfg");
 
     /* Print Scanner Tokens*/
     prog.add_argument("-pt", "--print-tokens")
@@ -61,6 +81,9 @@ int main(int argc, char* argv[]) {
     std::filesystem::path input_path(prog.get<std::string>("input"));
     std::string program_name = input_path.stem().string();
     std::filesystem::path output_path(prog.get<std::string>("--output"));
+
+    const bool GEN_C_CODE = prog.is_used("--c-code");
+    const C_GEN_SOURCE C_SOURCE(stringToCGenSource(prog.get<std::string>("--c-source")));
 
     const bool PRINT_TOKENS = prog.get<bool>("--print-tokens");
 
@@ -209,16 +232,38 @@ int main(int argc, char* argv[]) {
     }
     */
 
-    std::ofstream output_file(output_path);
+    if (GEN_C_CODE) {
+        std::ofstream c_output_file(output_path);
 
-    if (!output_file) {
-        std::cerr << "Failed to open assembly output file: " << output_path << "\n";
-        return 1;
+        switch (C_SOURCE) {
+        case C_GEN_SOURCE::AST: {
+            c_output_file << ast.to_c(program_name);
+            c_output_file.close();
+            break;
+        }
+        case C_GEN_SOURCE::CFG: {
+            std::set<std::string> vars;
+            collect_vars(*ast.get_root(), vars);
+            c_output_file << g.to_c(program_name,vars);
+            break;
+        }
+        default:
+            throw std::runtime_error("Attempting to build equivalent c from unknown source");
+        }
+
+        c_output_file.close();
+    } else {
+        std::ofstream output_file(output_path);
+
+        if (!output_file) {
+            std::cerr << "Failed to open assembly output file: " << output_path << "\n";
+            return 1;
+        }
+
+        // output_file << out_code.riscv;
+        output_file << cfg::cfg_codegen(g, program_name);
+        output_file.close();
     }
-
-    // output_file << out_code.riscv;
-    output_file << cfg::cfg_codegen(g, program_name, alloc);
-    output_file.close();
 
     return 0;
 }
