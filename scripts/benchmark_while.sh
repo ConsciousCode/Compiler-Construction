@@ -130,16 +130,16 @@ run_test add n/a 0 1 2 0
 run_test closest_prime 5 5 0 0 0 0 0
 
 # comparatornetwork_bestknown_for_11 (expects 11 inputs w0..w10)
-# run_test comparatornetwork_bestknown_for_11 desc 11 10 9 8 7 6 5 4 3 2 1
+run_test comparatornetwork_bestknown_for_11 desc 11 10 9 8 7 6 5 4 3 2 1
 
 # countTriangularNumbers (provide goUpToNumber and common initial vars)
-# run_test countTriangularNumbers 100 0 100 0 0 1 0 0
+run_test countTriangularNumbers 100 0 100 0 0 1 0 0
 
 # loop (n, output)
 run_test loop 5 5 0
 
 # madprimes (large test; provide primary W and some zeros)
-# run_test madprimes 50 50 0 0 0 0 0 0 0 0 0
+run_test madprimes 50 50 0 0 0 0 0 0 0 0 0
 
 # primescounter (range)
 run_test primescounter 100 100 0 0 0

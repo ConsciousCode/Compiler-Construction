@@ -86,7 +86,7 @@ std::string to_c_inner(const ast::Cond& cond) {
         [&code](auto&& arg) {
             using T = std::decay_t<decltype(arg)>;
             if constexpr (std::is_same_v<T, std::shared_ptr<ast::BoolConst>>) {
-                code << (arg->value ? "true" : "false");
+                code << (arg->value ? "1/*true*/" : "0/*false*/");
             } else if constexpr (std::is_same_v<T, std::shared_ptr<ast::Not>>) {
                 code << "!(" << to_c_inner(arg->cond) << ")";
             } else if constexpr (std::is_same_v<T, std::shared_ptr<ast::Logical>>) {
@@ -162,6 +162,7 @@ std::string to_c_inner(const ast::Block& block) {
 
 std::string to_c(std::string entry, const ast::Block& block) {
     std::set<std::string> vars;
+    int index;
     collect_vars(block, vars);
 
     std::stringstream code;
@@ -172,7 +173,7 @@ std::string to_c(std::string entry, const ast::Block& block) {
     if(vars.size() > 0) {
         code << "    int64_t ";
 
-        int index = 0;
+        index = 0;
         for (const auto& var : vars) {
             if (index > 0)
                 code << ", ";
@@ -186,7 +187,7 @@ std::string to_c(std::string entry, const ast::Block& block) {
     code << indent(to_c_inner(block)) << "\n";
 
     // Store local variables
-    int index = 0;
+    index = 0;
     for (const auto& var : vars) {
         code << "    vars[" << index << "] = " << mangle(var) << ";\n";
         ++index;

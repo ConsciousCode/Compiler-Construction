@@ -1,9 +1,9 @@
 if true then x:=  2 else
-  if not [if'] then ifi := elsem else else' := fi'
+  if not [if' = 0] then ifi := elsem else else' := fi'
 fi fi  {--} {- -}; --{- ... -}
 skip; skip ; skip ;skip; skip;
-if x -- line 1
-    then if y then -- line 2
+if x>x -- line 1
+    then if y<y then -- line 2
       {- comment -}
      {- com -- line 3
         ment -}z:=(((z))) -- {--} -- {-}
@@ -11,12 +11,12 @@ if x -- line 1
   fi else w := fi'fi fi;
 if [false] then skip
 else skip' := (skip');
-	skip fi
+	skip fi;
                               --}
 while [true] do
     x := x + x * x + x;
     skip;
-    if [not [ not[b{-{-{-}]]] then
+    if [not [ not[b{-{-{-}<0]]] then
         while false --' {-
         do
             while x > 3 do
@@ -25,9 +25,8 @@ skip od
         od; do' := od' + fi'; skip
     else skip
 fi od
-if [1 > 2 + 3 * (4 - 7)] then a0 := 1 else skip fi
-if a and not[or']or[true] and [false] and[[not[and'not and not[true]]]
+;if [1 > 2 + 3 * (4 - 7)] then a0 := 1 else skip fi;
+if a=a and not[or'=0]or[true] and [false] and[[not[and'not>1 and not[true]]]]
    --{}--
     {--}then not'not := and'or + or'and'not else
     fi' := if';while not[{-w-}true] do skip od fi
-fi
