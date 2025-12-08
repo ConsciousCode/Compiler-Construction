@@ -153,13 +153,18 @@ struct _Analyze {
     FlowAnalysis analyze(const cfg::CFG& cfg) {
         int limit = 0;
         bool fixed;
+        int max_iterations = cfg.blocks.size() * 2; // Allow at least 2x the number of blocks
         do {
             // true -> false whenever any set is changed
             fixed = true;
             for(const auto& block : cfg.blocks) {
                 fixed &= lv_fixedpoint(*block);
             }
-        } while(!fixed && ++limit < 30);
+        } while(!fixed && ++limit < max_iterations);
+
+        if (!fixed) {
+            std::cerr << "Warning: Flow analysis did not converge after " << max_iterations << " iterations\n";
+        }
 
         return ana;
     }
