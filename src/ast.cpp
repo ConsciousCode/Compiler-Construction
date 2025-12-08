@@ -97,7 +97,7 @@ std::string ast::AST::to_c(const std::string& prog_name) const {
     collect_vars(*root, vars);
 
     std::string result =
-        "#include <stdint.h>\nvoid " + prog_name + "(int64_t vars[]) {\n" + "    int64_t ";
+        "#include <stdint.h>\nint64_t " + prog_name + "(int64_t vars[]) {\n" + "    int64_t ";
 
     int index = 0;
     for (const auto& var : vars) {
@@ -115,14 +115,19 @@ std::string ast::AST::to_c(const std::string& prog_name) const {
         result += "\n";
     }
 
-    // Store local variables
+    // Store local variables and find output index
     index = 0;
+    int output_index = -1;
     for (const auto& var : vars) {
         result +=
             ctx.indent() + "vars[" + std::to_string(index) + "] = " + cgen::mangle(var) + ";\n";
+        if (var == "output") {
+            output_index = index;
+        }
         ++index;
     }
 
+    result += ctx.indent() + "return " + (output_index >= 0 ? "vars[" + std::to_string(output_index) + "]" : "0") + ";\n";
     result += "}\n";
 
     return result;

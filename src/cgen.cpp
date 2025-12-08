@@ -166,7 +166,7 @@ std::string to_c(std::string entry, const ast::Block& block) {
 
     std::stringstream code;
     code << "#include <stdint.h>\n";
-    code << "void " << entry << "(int64_t vars[]) {\n";
+    code << "int64_t " << entry << "(int64_t vars[]) {\n";
 
     // Load local variables
     if(vars.size() > 0) {
@@ -185,13 +185,18 @@ std::string to_c(std::string entry, const ast::Block& block) {
     // Code
     code << indent(to_c_inner(block)) << "\n";
 
-    // Store local variables
+    // Store local variables and find output index
     index = 0;
+    int output_index = -1;
     for (const auto& var : vars) {
         code << "    vars[" << index << "] = " << mangle(var) << ";\n";
+        if (var == "output") {
+            output_index = index;
+        }
         ++index;
     }
 
+    code << "    return " << (output_index >= 0 ? "vars[" + std::to_string(output_index) + "]" : "0") << ";\n";
     code << "}\n";
     return code.str();
 }

@@ -160,7 +160,7 @@ std::string SkipBlock::to_c([[maybe_unused]] const ast::CodeGenContext& ctx) con
 std::string CFG::to_c(const std::string& prog_name, std::set<std::string> vars) const {
 
     std::string result =
-        "#include <stdint.h>\nvoid " + prog_name + "(int64_t vars[]) {\n" + "    int64_t ";
+        "#include <stdint.h>\nint64_t " + prog_name + "(int64_t vars[]) {\n" + "    int64_t ";
 
     int index = 0;
     for (const auto& var : vars) {
@@ -181,14 +181,19 @@ std::string CFG::to_c(const std::string& prog_name, std::set<std::string> vars) 
 
     result += "exit:\n";
 
-    // Store local variables
+    // Store local variables and find output index
     index = 0;
+    int output_index = -1;
     for (const auto& var : vars) {
         result +=
             ctx.indent() + "vars[" + std::to_string(index) + "] = " + cgen::mangle(var) + ";\n";
+        if (var == "output") {
+            output_index = index;
+        }
         ++index;
     }
 
+    result += ctx.indent() + "return " + (output_index >= 0 ? "vars[" + std::to_string(output_index) + "]" : "0") + ";\n";
     result += "}\n";
 
     return result;

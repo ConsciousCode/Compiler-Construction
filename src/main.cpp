@@ -297,6 +297,7 @@ int main(int argc, char* argv[]) {
     // Output main defines
 
     main_file << "#define VAR_COUNT " << varset.size();
+    main_file << "\n#define LIVE_COUNT " << live_entries.size();
     main_file << "\n#define LIVE_NAMES ";
 
     for (const auto& [var, off] : live_entries) {
