@@ -51,3 +51,4 @@ _deps/
 /*.s
 .vscode
 /*.dot
+/main.c
