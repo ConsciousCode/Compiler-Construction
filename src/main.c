@@ -35,7 +35,7 @@ static const int live_offs[] = {
 };
 
 int main(int argc, char **argv) {
-    long vars[VAR_COUNT] = {0};
+    long vars[VAR_COUNT > 0 ? VAR_COUNT : 1] = {0};
 
     if (argc < 2 && LIVE_COUNT > 0) {
         fprintf(stderr, "Usage: %s", argv[0]);

@@ -35,7 +35,7 @@
 "};\n"
 "\n"
 "int main(int argc, char **argv) {\n"
-"    long vars[VAR_COUNT] = {0};\n"
+"    long vars[VAR_COUNT > 0 ? VAR_COUNT : 1] = {0};\n"
 "\n"
 "    if (argc < 2 && LIVE_COUNT > 0) {\n"
 "        fprintf(stderr, \"Usage: %s\", argv[0]);\n"

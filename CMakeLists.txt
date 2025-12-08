@@ -203,19 +203,47 @@ if(GIT_FOUND)
     )
 endif()
 
+# Detect native architecture
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
+    set(NATIVE_ARCH "x86_64")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|ARM64")
+    set(NATIVE_ARCH "aarch64")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "riscv64")
+    set(NATIVE_ARCH "riscv64")
+else()
+    set(NATIVE_ARCH ${CMAKE_SYSTEM_PROCESSOR})
+endif()
+
+message(STATUS "Native architecture detected: ${NATIVE_ARCH}")
+
 # Initialize global property to track WHILE programs
 set_property(GLOBAL PROPERTY WHILE_PROGRAMS_LIST "")
 
 function(add_while_program PROGRAM_NAME)
     set(WHILE_FILE "${PROJECT_SOURCE_DIR}/examples/while/${PROGRAM_NAME}.while")
-    set(ASM_FILE "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}.s")
-    set(MAIN_FILE "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}_main.c")
+    
+    # Organize outputs into while_progs directory structure
+    set(WHILE_PROGS_DIR "${CMAKE_BINARY_DIR}/while_progs")
+    set(ASM_DIR "${WHILE_PROGS_DIR}/asm")
+    set(C_DIR "${WHILE_PROGS_DIR}/c_code")
+    set(RISCV_BIN_DIR "${WHILE_PROGS_DIR}/bin/riscv64")
+    set(NATIVE_BIN_DIR "${WHILE_PROGS_DIR}/bin/${NATIVE_ARCH}")
+    
+    set(ASM_FILE "${ASM_DIR}/${PROGRAM_NAME}.s")
+    set(MAIN_FILE "${C_DIR}/${PROGRAM_NAME}_main.c")
     set(MAIN_C_STR "${PROJECT_SOURCE_DIR}/src/main.c.str")
-    set(C_FILE "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}.c")
-    set(C_CFG_FILE "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}_cfg.c")
-    set(RISCV_EXEC "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}_risc")
-    set(RISCV_C_EXEC "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}_c_risc")
-    set(RISCV_C_CFG_EXEC "${CMAKE_BINARY_DIR}/${PROGRAM_NAME}_c_cfg_risc")
+    set(C_FILE_AST "${C_DIR}/${PROGRAM_NAME}_ast.c")
+    set(C_CFG_FILE "${C_DIR}/${PROGRAM_NAME}_cfg.c")
+    
+    set(RISCV_EXEC "${RISCV_BIN_DIR}/${PROGRAM_NAME}_risc")
+    set(RISCV_C_EXEC "${RISCV_BIN_DIR}/${PROGRAM_NAME}_c_ast_risc")
+    set(RISCV_C_CFG_EXEC "${RISCV_BIN_DIR}/${PROGRAM_NAME}_c_cfg_risc")
+    
+    # Create output directories
+    file(MAKE_DIRECTORY ${ASM_DIR})
+    file(MAKE_DIRECTORY ${C_DIR})
+    file(MAKE_DIRECTORY ${RISCV_BIN_DIR})
+    file(MAKE_DIRECTORY ${NATIVE_BIN_DIR})
     
     add_custom_command(
         OUTPUT ${MAIN_C_STR}
@@ -245,8 +273,8 @@ function(add_while_program PROGRAM_NAME)
     
     # Custom command to generate C code from WHILE code
     add_custom_command(
-        OUTPUT ${C_FILE}
-        COMMAND wisc ${WHILE_FILE} -cc -o ${C_FILE}
+        OUTPUT ${C_FILE_AST}
+        COMMAND wisc ${WHILE_FILE} -cc -o ${C_FILE_AST}
         DEPENDS ${WHILE_FILE}
         DEPENDS wisc
 	COMMENT "Generating C code from AST for ${PROGRAM_NAME}.while"
@@ -263,19 +291,25 @@ function(add_while_program PROGRAM_NAME)
     # Create RISC-V Target from assembly
     add_custom_target(${PROGRAM_NAME}_risc  DEPENDS ${RISCV_EXEC})
     
-    # Create C executable from generated C code (native x86_64)
-    add_executable(${PROGRAM_NAME}_c ${C_FILE} ${MAIN_FILE})
+    # Create C executable from generated C code (native architecture)
+    add_executable(${PROGRAM_NAME}_c ${C_FILE_AST} ${MAIN_FILE})
     target_compile_definitions(${PROGRAM_NAME}_c PRIVATE PROGRAM_NAME=${PROGRAM_NAME})
+    set_target_properties(${PROGRAM_NAME}_c PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${NATIVE_BIN_DIR}
+    )
 
     add_executable(${PROGRAM_NAME}_c_cfg ${C_CFG_FILE} src/main.c)
     target_compile_definitions(${PROGRAM_NAME}_c_cfg PRIVATE PROGRAM_NAME=${PROGRAM_NAME})
+    set_target_properties(${PROGRAM_NAME}_c_cfg PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${NATIVE_BIN_DIR}
+    )
     
     # Create RISC-V C executables (cross-compiled)
     add_custom_command(
         OUTPUT ${RISCV_C_EXEC}
-        COMMAND riscv64-linux-gnu-gcc ${C_FILE} ${MAIN_FILE}
+        COMMAND riscv64-linux-gnu-gcc ${C_FILE_AST} ${MAIN_FILE}
                 -DPROGRAM_NAME=${PROGRAM_NAME} -o ${RISCV_C_EXEC} -static
-        DEPENDS ${C_FILE} ${MAIN_FILE}
+        DEPENDS ${C_FILE_AST} ${MAIN_FILE}
         COMMENT "Cross-compiling C version of ${PROGRAM_NAME} to RISC-V"
     )
     
@@ -287,7 +321,7 @@ function(add_while_program PROGRAM_NAME)
         COMMENT "Cross-compiling CFG C version of ${PROGRAM_NAME} to RISC-V"
     )
     
-    add_custom_target(${PROGRAM_NAME}_c_risc DEPENDS ${RISCV_C_EXEC})
+    add_custom_target(${PROGRAM_NAME}_c_ast_risc DEPENDS ${RISCV_C_EXEC})
     add_custom_target(${PROGRAM_NAME}_c_cfg_risc DEPENDS ${RISCV_C_CFG_EXEC})
     
     # Create custom target that depends on ALL versions
@@ -295,7 +329,7 @@ function(add_while_program PROGRAM_NAME)
         ${RISCV_EXEC} 
         ${PROGRAM_NAME}_c 
         ${PROGRAM_NAME}_c_cfg
-        ${PROGRAM_NAME}_c_risc
+        ${PROGRAM_NAME}_c_ast_risc
         ${PROGRAM_NAME}_c_cfg_risc
     )
     
@@ -336,9 +370,7 @@ add_custom_target(while_programs
 # Target to package RISC-V binaries
 add_custom_target(package-riscv
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/riscv_binaries
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/*_risc ${CMAKE_BINARY_DIR}/riscv_binaries/ || true
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/*_c_risc ${CMAKE_BINARY_DIR}/riscv_binaries/ || true  
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/*_c_cfg_risc ${CMAKE_BINARY_DIR}/riscv_binaries/ || true
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/while_progs/bin/riscv64 ${CMAKE_BINARY_DIR}/riscv_binaries
     COMMAND cd ${CMAKE_BINARY_DIR} && tar -czf riscv_binaries.tar.gz riscv_binaries
     DEPENDS while_programs
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}

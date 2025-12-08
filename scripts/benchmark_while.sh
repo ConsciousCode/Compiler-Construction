@@ -53,8 +53,17 @@ run_test() {
     shift 2
     local args="$@"
     
-    local risc_exec="${BUILD_DIR}/${program_name}_risc"
-    local c_exec="${BUILD_DIR}/${program_name}_c"
+    # Detect architecture (matching CMake logic)
+    local ARCH=$(uname -m)
+    case "$ARCH" in
+        x86_64|amd64) NATIVE_ARCH="x86_64" ;;
+        aarch64|arm64) NATIVE_ARCH="aarch64" ;;
+        riscv64) NATIVE_ARCH="riscv64" ;;
+        *) NATIVE_ARCH="$ARCH" ;;
+    esac
+    
+    local risc_exec="${BUILD_DIR}/while_progs/bin/riscv64/${program_name}_risc"
+    local c_exec="${BUILD_DIR}/while_progs/bin/${NATIVE_ARCH}/${program_name}_c_cfg"
     
     # Check if executables exist
     if [ ! -f "$risc_exec" ] || [ ! -f "$c_exec" ]; then
