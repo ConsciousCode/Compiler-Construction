@@ -3,17 +3,36 @@
 #include "cfg_codegen.hpp"
 #include "cfg_graphviz.hpp"
 #include "codegen.hpp"
+#include "collect_vars.hpp"
 #include "graphviz.hpp"
 #include "parser.hpp"
 #include "scanner.hpp"
 #include "while_parser.hpp"
+#include "flow.hpp"
+#include "reg_alloc.hpp"
+#include <assert.h>
 
 #include <argparse/argparse.hpp>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <map>
+#include <stdexcept>
 #include <string>
 #include <vector>
+
+enum class C_GEN_SOURCE { AST, CFG };
+
+std::map<std::string, C_GEN_SOURCE> cgen_source_map{{"ast", C_GEN_SOURCE::AST},
+                                                    {"cfg", C_GEN_SOURCE::CFG}};
+
+C_GEN_SOURCE stringToCGenSource(const std::string& str) {
+    auto it = cgen_source_map.find(str);
+    if (it != cgen_source_map.end()) {
+        return it->second;
+    }
+    throw std::runtime_error("Invalid C Generation Source");
+}
 
 int main(int argc, char* argv[]) {
     argparse::ArgumentParser prog("wisc");
@@ -21,6 +40,12 @@ int main(int argc, char* argv[]) {
     /* Core Compiler Args */
     prog.add_argument("input").help("Input file");
     prog.add_argument("-o", "--output").help("Output file for Assembly").default_value("out.s");
+    prog.add_argument("-m", "--main").help("Output file for main harness").default_value("main.c");
+    prog.add_argument("-cc", "--c-code").help("Generate equivalent c code").flag();
+    prog.add_argument("--c-source")
+        .help("C code generation source")
+        .default_value(std::string{"ast"})
+        .choices("ast", "cfg");
 
     /* Print Scanner Tokens*/
     prog.add_argument("-pt", "--print-tokens")
@@ -45,6 +70,9 @@ int main(int argc, char* argv[]) {
         .default_value(std::string("cfg.dot"));
     prog.add_argument("-sv", "--show-cfg-vars").help("Include used vars in CFG node labels").flag();
 
+    /* Flow analysis */
+    prog.add_argument("-pf", "--print-flow").help("Print the flow analysis equations").flag();
+
     try {
         prog.parse_args(argc, argv);
     } catch (const std::exception& e) {
@@ -56,6 +84,10 @@ int main(int argc, char* argv[]) {
     std::filesystem::path input_path(prog.get<std::string>("input"));
     std::string program_name = input_path.stem().string();
     std::filesystem::path output_path(prog.get<std::string>("--output"));
+    std::filesystem::path main_path(prog.get<std::string>("--main"));
+
+    const bool GEN_C_CODE = prog.is_used("--c-code");
+    const C_GEN_SOURCE C_SOURCE(stringToCGenSource(prog.get<std::string>("--c-source")));
 
     const bool PRINT_TOKENS = prog.get<bool>("--print-tokens");
 
@@ -70,6 +102,8 @@ int main(int argc, char* argv[]) {
     const bool GRAPH_CFG = prog.is_used("--graph-cfg");
     std::filesystem::path cfg_graph_path(prog.get<std::string>("--graph-cfg"));
     const bool SHOW_CFG_VARS = prog.get<bool>("--show-cfg-vars");
+
+    const bool PRINT_FLOW = prog.get<bool>("--print-flow");
 
     /* Load and read input file */
     std::ifstream input_file(input_path);
@@ -167,6 +201,28 @@ int main(int argc, char* argv[]) {
         cfg_dot_file.close();
     }
 
+    auto ana = flow_analysis(g, {"output"});
+    g.dce(ana);
+
+    if(PRINT_FLOW) {
+        std::cout << "Equations:" << std::endl;
+        ana.print_equations(g);
+        std::cout << std::endl << "Solutions:" << std::endl;
+        ana.print_solution();
+
+        std::ofstream cfg_dot_file(cfg_graph_path);
+
+        if (!cfg_dot_file) {
+            std::cerr << "Failed to open CFG output file: " << cfg_graph_path << "\n";
+            return 1;
+        }
+
+        cfg::print_cfg_dot(g, cfg_dot_file, SHOW_CFG_VARS);
+        cfg_dot_file.close();
+    }
+
+    Allocation alloc = allocate_registers(g, ana);
+
     /* Generate Code */
     /*
     Codegen cg;
@@ -178,17 +234,86 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     */
-   
-    std::ofstream output_file(output_path);
 
-    if (!output_file) {
-        std::cerr << "Failed to open assembly output file: " << output_path << "\n";
+    if (GEN_C_CODE) {
+        std::ofstream c_output_file(output_path);
+
+        switch (C_SOURCE) {
+        case C_GEN_SOURCE::AST: {
+            c_output_file << ast.to_c(program_name);
+            c_output_file.close();
+            break;
+        }
+        case C_GEN_SOURCE::CFG: {
+            std::set<std::string> vars;
+            collect_vars(*ast.get_root(), vars);
+            c_output_file << g.to_c(program_name, vars, ana);
+            break;
+        }
+        default:
+            throw std::runtime_error("Attempting to build equivalent c from unknown source");
+        }
+
+        c_output_file.close();
+    } else {
+        std::ofstream output_file(output_path);
+
+        if (!output_file) {
+            std::cerr << "Failed to open assembly output file: " << output_path << "\n";
+            return 1;
+        }
+
+        // output_file << out_code.riscv;
+
+        Allocation alloc = allocate_registers(g, ana);
+        output_file << cfg::cfg_codegen(g, program_name, alloc, ana);
+        output_file.close();
+    }
+
+    // Generate main harness
+    std::ofstream main_file(main_path);
+
+    if (!main_file) {
+        std::cerr << "Failed to open main output file: " << output_path << "\n";
         return 1;
     }
 
-    //output_file << out_code.riscv;
-    output_file << cfg::cfg_codegen(g, program_name);
-    output_file.close();
+    assert(g.entry != nullptr);
+    std::map<std::string, size_t> live_entries;
+    std::set<std::string> varset;
+    std::map<std::string, size_t> varoff;
+
+    collect_vars(*ast.get_root(), varset);
+
+    size_t i = 0;
+    for(const auto& var : varset) {
+        varoff[var] = i++;
+    }
+
+    for(const auto& live : ana.lv[g.entry->id].entry) {
+        live_entries[live] = varoff[live];
+    }
+
+    // Output main defines
+
+    main_file << "#define VAR_COUNT " << varset.size();
+    main_file << "\n#define LIVE_COUNT " << live_entries.size();
+    main_file << "\n#define LIVE_NAMES ";
+
+    for (const auto& [var, off] : live_entries) {
+        main_file << '"' << var << "\", ";
+    }
+
+    main_file << "\n#define LIVE_OFFS ";
+    for (const auto& [var, off] : live_entries) {
+        main_file << varoff[var] << ", ";
+    }
+
+    main_file << "\n#define PROGRAM_NAME " << program_name << std::endl;
+    main_file <<
+        #include "main.c.str"
+    ;
+    main_file.close();
 
     return 0;
 }

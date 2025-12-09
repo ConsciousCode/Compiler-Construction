@@ -8,17 +8,16 @@
 
 #include <algorithm>
 #include <cassert>
-#include <cstdio>
-#include <iostream>
 #include <set>
 #include <string>
 #include <type_traits>
-#include <unordered_map>
+#include <map>
 
 /**
  * Get the depth of an AST expression to determine the size of the
  * evaluation stack.
  **/
+static Allocation g_alloc;
 int depth_of(const ast::Arith& arith);
 int depth_of(const ast::Expr& expr);
 
@@ -43,21 +42,48 @@ int depth_of(const ast::Expr& expr) {
         expr);
 }
 
+static std::string var_reg(const std::string& name) {
+    auto it = g_alloc.var_to_reg.find(name);
+    if (it == g_alloc.var_to_reg.end()) {
+        return "";
+    }
+
+    return it->second;
+}
+
+
+static int var_slot(const std::string& name) {
+    auto it = g_alloc.var_to_slot.find(name);
+    assert(it != g_alloc.var_to_slot.end());
+    return it->second;
+}
+
+static std::string var_addr(const std::string& name) {
+    int slot = var_slot(name);
+    int offset = slot * 8;
+    return std::to_string(offset) + "(a0)";
+}
 /**
  * Stateful meat of codgen from CFG.
  **/
 struct CFG_Codegen {
     int max_depth;
-    std::unordered_map<std::string, int> name_offsets;
-    std::unordered_map<size_t, std::string> cond_labels;
+    std::map<std::string, int> name_offsets;
+    std::map<size_t, std::string> cond_labels;
     std::set<size_t> seen_ids;
     std::string program_name;
     Emitter emit;
+    const cfg::CFG& cfg;
+    const FlowAnalysis& flow_ana;
 
-    CFG_Codegen(const cfg::CFG& cfg, const std::string& prog) {
+    CFG_Codegen(const cfg::CFG& cfg_ref, const std::string& prog, const FlowAnalysis& ana)
+        : cfg(cfg_ref), flow_ana(ana) {
         std::set<std::string> varset;
         program_name = prog;
         max_depth = 0;
+
+        // Aggregate all vars and the maximum stack depth for expression evaluation (not including spilled vars)
+
         for (const auto& block : cfg.blocks) {
             switch (block->kind) {
             case cfg::BlockKind::Assignment: {
@@ -79,12 +105,16 @@ struct CFG_Codegen {
             }
         }
 
-        std::vector<std::string> vars{varset.begin(), varset.end()};
-        std::sort(vars.begin(), vars.end());
+        // Construct var offsets in the array
 
         int off = 0;
-        for (const auto& var : vars) {
+        for (const auto& var : varset) {
             name_offsets[var] = off++;
+        }
+
+        name_offsets.clear();
+        for (const auto& [name, slot] : g_alloc.var_to_slot) {
+            name_offsets[name] = static_cast<int>(slot);
         }
     }
 
@@ -162,10 +192,22 @@ struct CFG_Codegen {
 
     **/
     void emit_arith(const std::string& dst, const ast::Arith& arith, int depth) {
+        // Check if we need to use the stack to preserve the left operand
+        // We only need the stack if the right expression could overwrite t0
+        int right_depth = depth_of(arith.right);
+        
         emit_expr("t0", arith.left, depth);
-        emit_asm("sd", "t0", deref(depth * 8, "sp"));
-        emit_expr("t1", arith.right, depth + 1);
-        emit_asm("ld", "t0", deref(depth * 8, "sp"));
+        
+        if (right_depth > 0) {
+            // Right side is complex, need to save left operand
+            emit_asm("sd", "t0", deref(depth * 8, "sp"));
+            emit_expr("t1", arith.right, depth + 1);
+            emit_asm("ld", "t0", deref(depth * 8, "sp"));
+        } else {
+            // Right side is simple (constant or variable), no need for stack
+            emit_expr("t1", arith.right, depth + 1);
+        }
+        
         switch (arith.op) {
         case ast::Arith::Op::ADD:
             emit_line("add " + dst + ", t0, t1");
@@ -210,8 +252,17 @@ struct CFG_Codegen {
                     // Load immediate into t0 and store
                     emit_asm("li", dst, std::to_string(node));
                 } else if constexpr (std::is_same_v<T, std::string>) {
-                    // Store register onto the stack
-                    emit_asm("mv", dst, name_reg(node));
+                    // Use register if allocated, otherwise load from stack
+                    std::string r = var_reg(node);
+                    if (!r.empty()) {
+                        // Variable is in a register, just move it
+                        if (r != dst) {
+                            emit_asm("mv", dst, r);
+                        }
+                    } else {
+                        // Variable is spilled, load from memory
+                        emit_asm("ld", dst, var_addr(node));
+                    }
                 } else if constexpr (std::is_same_v<T, std::shared_ptr<ast::Arith>>) {
                     // Use t0 as the temporary top of stack and then store
                     emit_arith(dst, *node, depth);
@@ -311,7 +362,15 @@ struct CFG_Codegen {
 
             // Put the expr in the register
             emit_comm(ablock->lhs + " := " + to_while(ablock->expr));
-            emit_expr(name_reg(ablock->lhs), ablock->expr, 0);
+            emit_expr("t0", ablock->expr, 0);
+            std::string r = var_reg(ablock->lhs);
+            if (!r.empty()) {
+                // Variable is in a register, just move the value
+                emit_asm("mv", r, "t0");
+            } else {
+                // Variable is spilled, store to memory
+                emit_asm("sd", "t0", var_addr(ablock->lhs));
+            }
 
             if (ablock->succs.size() == 0) {
                 emit_asm("j", "L_return");
@@ -331,10 +390,8 @@ struct CFG_Codegen {
             emit_label(build_label(block->id, "L_cond"));
 
             cfg::CFGBlock *bt = cblock->succs[0], *bf = nullptr;
-            std::string
-                Ltrue = build_label(bt->id, "L_true"),
-                Lfalse = "L_return";
-            if(cblock->succs.size() > 1) {
+            std::string Ltrue = build_label(bt->id, "L_true"), Lfalse = "L_return";
+            if (cblock->succs.size() > 1) {
                 bf = cblock->succs[1];
                 Lfalse = build_label(bf->id, "L_false");
             }
@@ -356,10 +413,10 @@ struct CFG_Codegen {
         case cfg::BlockKind::Skip: {
             emit_comm("Skip");
             auto it = cond_labels.find(block->id);
-            if(it != cond_labels.end()) {
+            if (it != cond_labels.end()) {
                 emit_label(it->second);
             }
-            
+
             if (block->succs.size() == 0) {
                 emit_asm("j", "L_return");
             } else {
@@ -374,8 +431,14 @@ struct CFG_Codegen {
         std::string sb;
         ;
         for (const auto& [name, off] : name_offsets) {
-            sb = name + "=" + off_reg(off) + ", " + sb;
+            std::string r = var_reg(name);
+            if (!r.empty()) {
+                sb = name + "=" + r + "(slot " + std::to_string(off) + "), " + sb;
+            } else {
+                sb = name + "=[spill @slot " + std::to_string(off) + "], " + sb;
+            }
         }
+
         emit_line("#vars: " + sb, false);
 
         emit_line(".text", false);
@@ -385,10 +448,21 @@ struct CFG_Codegen {
         // Allocate stack space for the expression evaluation stack
         emit_line("addi sp, sp, -" + std::to_string(max_depth * 8));
 
-        // Unload variables from the array
+        // Get live-in variables for entry block
+        std::set<std::string> live_in;
+        if (cfg.entry != nullptr && flow_ana.lv.count(cfg.entry->id)) {
+            live_in = flow_ana.lv.at(cfg.entry->id).entry;
+        }
+
+        // Only load live-in variables from the array
         for (const auto& [name, off] : name_offsets) {
-            emit_comm(off_reg(off) + " <- input (" + name + ")");
-            emit_line("ld " + off_reg(off) + ", " + std::to_string(off * 8) + "(a0)");
+            if (live_in.count(name)) {
+                std::string r = var_reg(name);
+                if (!r.empty()) {
+                    emit_comm(r + " <- input (" + name + ")");
+                    emit_line("ld " + r + ", " + std::to_string(off * 8) + "(a0)");
+                }
+            }
         }
         emit_line("");
     }
@@ -398,14 +472,21 @@ struct CFG_Codegen {
 
         emit_label("L_return");
 
+        auto out = name_offsets.find("output");
+        if(out != name_offsets.end()) {
+            std::string reg = var_reg("output");
+            if(reg.empty()) {
+                emit_asm("ld", "a0", var_addr("output"));
+            }
+            else {
+                emit_asm("mv", "a0", reg);
+            }
+        }
+
         // Undo the stack allocation
         emit_line("addi sp, sp, " + std::to_string(max_depth * 8));
 
         // Load variables back into the array
-        for (const auto& [name, off] : name_offsets) {
-            emit_comm("output (" + name + ") <- " + off_reg(off));
-            emit_line("sd " + off_reg(off) + ", " + std::to_string(off * 8) + "(a0)");
-        }
         emit_line("ret");
     }
 
@@ -419,8 +500,9 @@ struct CFG_Codegen {
 /**
  * Generate RISC-V pseudocode from a CFG using infinite sN registers.
  **/
-std::string cfg::cfg_codegen(const cfg::CFG& cfg, const std::string& program_name) {
-    CFG_Codegen cgen(cfg, program_name);
+std::string cfg::cfg_codegen(const cfg::CFG& cfg, const std::string& program_name, const Allocation& alloc, const FlowAnalysis& ana) {
+    g_alloc = alloc;
+    CFG_Codegen cgen(cfg, program_name, ana);
     cgen.cfg_codegen(cfg.entry);
     return cgen.emit.str();
 }

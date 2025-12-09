@@ -23,7 +23,7 @@ while [true] do
             -- -}
 skip od
         od; do' := od' + fi'; skip
-    else skip
+    else output := 0
 fi od
 ;if [1 > 2 + 3 * (4 - 7)] then a0 := 1 else skip fi;
 if a=a and not[or'=0]or[true] and [false] and[[not[and'not>1 and not[true]]]]

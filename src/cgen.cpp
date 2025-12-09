@@ -1,17 +1,16 @@
 /**
  * Generate C code from the AST.
  */
+#include "cgen.hpp"
 
 #include "ast.hpp"
 #include "collect_vars.hpp"
 #include "scanner.hpp"
-#include "while_parser.hpp"
 
-#include <filesystem>
-#include <fstream>
-#include <iostream>
+#include <sstream>
 #include <variant>
 
+namespace cgen {
 /**
  * https://stackoverflow.com/questions/2896600/#answer-24315631
  */
@@ -167,7 +166,7 @@ std::string to_c(std::string entry, const ast::Block& block) {
 
     std::stringstream code;
     code << "#include <stdint.h>\n";
-    code << "void " << entry << "(int64_t vars[]) {\n";
+    code << "int64_t " << entry << "(int64_t vars[]) {\n";
 
     // Load local variables
     if(vars.size() > 0) {
@@ -186,50 +185,19 @@ std::string to_c(std::string entry, const ast::Block& block) {
     // Code
     code << indent(to_c_inner(block)) << "\n";
 
-    // Store local variables
+    // Store local variables and find output index
     index = 0;
+    int output_index = -1;
     for (const auto& var : vars) {
         code << "    vars[" << index << "] = " << mangle(var) << ";\n";
+        if (var == "output") {
+            output_index = index;
+        }
         ++index;
     }
 
+    code << "    return " << (output_index >= 0 ? "vars[" + std::to_string(output_index) + "]" : "0") << ";\n";
     code << "}\n";
     return code.str();
 }
-
-int main(int argc, char* argv[]) {
-    if (argc < 2) {
-        std::cerr << "Usage: " << argv[0] << " <input_file>" << std::endl;
-        return 1;
-    }
-
-    // Load in program name
-    std::filesystem::path input_path(argv[1]);
-    std::string program_name = input_path.stem().string();
-
-    // Load and read file;
-    std::ifstream ifs(argv[1]);
-    std::string prog, line;
-    while (std::getline(ifs, line)) {
-        prog += line + "\n";
-    }
-    ifs.close();
-    std::vector<Token> tokens;
-
-    Scanner s = Scanner(prog.c_str());
-    Token t = s.next_token();
-    while (t.type != TokenType::ERROR_EOF) {
-        if (t.is_error())
-            break;
-        tokens.push_back(t);
-        t = s.next_token();
-    }
-
-    parser::ParserGenerator pg = generate_while_parser();
-    parser::Parser p(pg);
-    std::shared_ptr<parser::ParseTreeNode> parse_tree = p.parse(tokens);
-
-    ast::AST ast = parse_tree->to_ast();
-
-    std::cout << to_c(program_name, *ast.get_root());
-}
+} // namespace cgen
