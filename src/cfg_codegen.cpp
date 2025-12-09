@@ -185,24 +185,24 @@ struct CFG_Codegen {
     /**
      * Emit machine code for calculating an arithmetic expression.
      *
+     * Arith can never be a bare variable so it doesn't return its dst.
+     *
      * @param dst The register which should hold the top of the stack, usually t0
 
     **/
     void emit_arith(const std::string& dst, const ast::Arith& arith, int depth) {
-        emit_expr("t0", arith.left, depth);
-        emit_asm("sd", "t0", deref(depth * 8, "sp"));
-        emit_expr("t1", arith.right, depth + 1);
-        emit_asm("ld", "t0", deref(depth * 8, "sp"));
+        auto lhs = emit_expr("t0", arith.left, depth);
+        auto rhs = emit_expr("t1", arith.right, depth + 1);
         switch (arith.op) {
         case ast::Arith::Op::ADD:
-            emit_line("add " + dst + ", t0, t1");
+            emit_asm("add", dst, lhs, rhs);
             break;
 
         case ast::Arith::Op::SUB:
-            emit_line("sub " + dst + ", t0, t1");
+            emit_asm("sub", dst, lhs, rhs);
             break;
         case ast::Arith::Op::MUL:
-            emit_line("mul " + dst + ", t0, t1");
+            emit_asm("mul", dst, lhs, rhs);
             break;
         }
     }
@@ -227,30 +227,31 @@ struct CFG_Codegen {
     /**
      * Emit machine code for calculating an expression.
      *
-     * @param dst  The register which should hold the top of the stack
+     * @param dst  The register which should hold the top of the stack if a location is not already available.
+     *
+     * @return The actual location the result is in
      **/
-    void emit_expr(const std::string& dst, const ast::Expr& block, int depth) {
-        std::visit(
+    std::string emit_expr(const std::string& dst, const ast::Expr& block, int depth) {
+        return std::visit(
             [&](auto&& node) {
                 using T = std::decay_t<decltype(node)>;
                 if constexpr (std::is_same_v<T, int>) {
                     // Load immediate into t0 and store
                     emit_asm("li", dst, std::to_string(node));
                 } else if constexpr (std::is_same_v<T, std::string>) {
-                    // Store register onto the stack
-                    auto it = name_offsets.find(node);
-                    assert(it != name_offsets.end());
-                    int off = it->second;
-
-                    emit_line("ld " + dst + ", " + std::to_string(off * 8) + "(a0)");
+                    // Return either the register or the default dst
+                    std::string r = var_reg(node);
+                    return r.empty()? dst : r;
                 } else if constexpr (std::is_same_v<T, std::shared_ptr<ast::Arith>>) {
                     // Use t0 as the temporary top of stack and then store
                     emit_arith(dst, *node, depth);
                 } else {
                     static_assert(!sizeof(T*), "Non-exhaustive (emit_expr)");
                 }
+                return dst;
             },
-            block);
+            block
+        );
     }
 
     /**
@@ -282,27 +283,27 @@ struct CFG_Codegen {
                 } else if constexpr (std::is_same_v<T, ast::Comparison>) {
                     // We can use these temporaries instead because relational
                     // operator expressions can't nest.
-                    emit_expr("t2", node->left, 0);
-                    emit_expr("t3", node->right, 1);
+                    auto lhs = emit_expr("t2", node->left, 0);
+                    auto rhs = emit_expr("t3", node->right, 1);
 
                     // RISC-V only has beq, blt, and bge but with these we can derive
                     // <= and > by swapping the order of operands
 
                     switch (node->op) {
                     case ast::Comparison::Op::EQ:
-                        emit_line("beq t2, t3, " + Ltrue);
+                        emit_asm("beq", lhs, rhs, Ltrue);
                         break;
                     case ast::Comparison::Op::LT:
-                        emit_line("blt t2, t3, " + Ltrue);
+                        emit_asm("blt", lhs, rhs, Ltrue);
                         break;
                     case ast::Comparison::Op::LE:
-                        emit_line("bge t3, t2, " + Ltrue); // Swap
+                        emit_asm("bge", rhs, lhs, Ltrue); // Swap
                         break;
                     case ast::Comparison::Op::GT:
-                        emit_line("blt t3, t2, " + Ltrue); // Swap
+                        emit_asm("blt", rhs, lhs, Ltrue); // Swap
                         break;
                     case ast::Comparison::Op::GE:
-                        emit_line("bge t2, t3, " + Ltrue);
+                        emit_asm("bge", lhs, rhs, Ltrue);
                         break;
                     }
                     emit_asm("j", Lfalse);
@@ -342,13 +343,17 @@ struct CFG_Codegen {
 
             // Put the expr in the register
             emit_comm(ablock->lhs + " := " + to_while(ablock->expr));
-            emit_expr("t0", ablock->expr, 0);
-            std::string r = var_reg(ablock->lhs);
-            if (!r.empty()) {
-                emit_asm("mv", r, "t0");
-                emit_asm("sd", r, var_addr(ablock->lhs));
+            std::string lhs = var_reg(ablock->lhs);
+            if (lhs.empty()) {
+                // Not a register, must move onto stack
+                auto rhs = emit_expr("t0", ablock->expr, 0);
+                emit_asm("sd", rhs, var_addr(ablock->lhs));
             } else {
-                emit_asm("sd", "t0", var_addr(ablock->lhs));
+                auto rhs = emit_expr(lhs, ablock->expr, 0);
+                // x := y
+                if(rhs != lhs) {
+                    emit_asm("mv", lhs, rhs);
+                }
             }
 
             if (ablock->succs.size() == 0) {
