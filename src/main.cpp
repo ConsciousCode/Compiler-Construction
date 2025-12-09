@@ -266,7 +266,7 @@ int main(int argc, char* argv[]) {
         // output_file << out_code.riscv;
 
         Allocation alloc = allocate_registers(g, ana);
-        output_file << cfg::cfg_codegen(g, program_name, alloc);
+        output_file << cfg::cfg_codegen(g, program_name, alloc, ana);
         output_file.close();
     }
 
