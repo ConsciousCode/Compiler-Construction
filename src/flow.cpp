@@ -69,14 +69,25 @@ void FlowAnalysis::print_equations(const cfg::CFG& cfg) const {
         std::cout << std::endl;
 
         std::cout << "LA•(" << label << ") = ";
-        const auto& block = *cfg.blocks[label];
-        if(block.succs.size() == 0) {
+        cfg::CFGBlock* block = nullptr;
+        for(const auto& b : cfg.blocks) {
+            if(b->id == label) {
+                block = b.get();
+                break;
+            }
+        }
+        if(!block) {
+            std::cout << "ERROR: Block " << label << " not found!" << std::endl;
+            continue;
+        }
+
+        if(block->succs.size() == 0) {
             std::cout << exit_live;
         }
         else {
-            auto it = block.succs.begin();
+            auto it = block->succs.begin();
             std::cout << "LA◦(" << (*it++)->id << ")";
-            while(it != block.succs.end()) {
+            while(it != block->succs.end()) {
                 std::cout << " ∪ LA◦(" << (*it++)->id << ")";
             }
         }
